@@ -1,0 +1,1 @@
+I was mainly inspired because I visited some not-so-legal sites and found that some don't have captions. Another case was that I would watch Twitter videos and found that I could not follow along easily. This is meant for accessibility.
