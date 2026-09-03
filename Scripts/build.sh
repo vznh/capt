@@ -17,8 +17,10 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp NOTICE LICENSE "$APP/Contents/Resources/"   # third-party and source license notices ship with the binary
 echo -n "APPL????" > "$APP/Contents/PkgInfo"
 
-codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements \
-  --options runtime --timestamp=none "$APP" 2>/dev/null \
-  || codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements "$APP"
+if ! codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements \
+    --options runtime --timestamp=none "$APP"; then
+  echo "warning: hardened-runtime signing failed; retrying without --options runtime" >&2
+  codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements "$APP"
+fi
 
 echo "Built $APP"

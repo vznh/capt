@@ -92,18 +92,24 @@ final class SystemAudioTap: AudioCapturing {
     private func teardown() {
         if aggregateDeviceID.isValid {
             if let ioProcID {
-                AudioDeviceStop(aggregateDeviceID, ioProcID)
-                AudioDeviceDestroyIOProcID(aggregateDeviceID, ioProcID)
+                check(AudioDeviceStop(aggregateDeviceID, ioProcID), "stop aggregate device")
+                check(AudioDeviceDestroyIOProcID(aggregateDeviceID, ioProcID), "destroy IO proc")
                 self.ioProcID = nil
             }
-            AudioHardwareDestroyAggregateDevice(aggregateDeviceID)
+            check(AudioHardwareDestroyAggregateDevice(aggregateDeviceID), "destroy aggregate device")
             aggregateDeviceID = .unknown
         }
         if tapID.isValid {
-            AudioHardwareDestroyProcessTap(tapID)
+            check(AudioHardwareDestroyProcessTap(tapID), "destroy process tap")
             tapID = .unknown
         }
         format = nil
+    }
+
+    private func check(_ status: OSStatus, _ what: String) {
+        if status != noErr {
+            logger.warning("Failed to \(what, privacy: .public): \(status, privacy: .public)")
+        }
     }
 
     deinit { teardown() }
