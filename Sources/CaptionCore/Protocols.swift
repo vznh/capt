@@ -37,14 +37,3 @@ public protocol AudioCapturing: AnyObject {
     func start(onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void) throws
     func stop()
 }
-
-public enum PermissionStatus: Sendable, Equatable {
-    case unknown
-    case authorized
-    case denied
-}
-
-public protocol PermissionProviding {
-    func status() async -> PermissionStatus
-    func request() async -> Bool
-}

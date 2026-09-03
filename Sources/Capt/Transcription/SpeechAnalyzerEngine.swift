@@ -30,10 +30,6 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         get async { await SpeechTranscriber.supportedLocales }
     }
 
-    static var installedLocales: [Locale] {
-        get async { await SpeechTranscriber.installedLocales }
-    }
-
     func prepare() async throws {
         guard SpeechTranscriber.isAvailable else {
             throw "SpeechAnalyzer is not available on this Mac."

@@ -25,7 +25,6 @@ final class AppModel {
     private(set) var noAudioDetected = false
     private(set) var supportedLocales: [Locale] = []
     private var previewTask: Task<Void, Never>?
-    private(set) var installedLocales: [Locale] = []
 
     /// What the user asked for. Flips immediately so the switch does not snap back while the engine starts.
     private(set) var isEnabled = false
@@ -48,9 +47,6 @@ final class AppModel {
 
     var isRunning: Bool { session?.isRunning ?? false }
 
-    /// BCP 47 tag of the chosen locale, matching the tags used by the language picker.
-    var selectedLocaleTag: String { settings.locale.identifier(.bcp47) }
-
     /// Shown beside the title: Active while transcribing, Inactive otherwise.
     var activityLabel: String { status == .running ? "Active" : "Inactive" }
 
@@ -67,28 +63,9 @@ final class AppModel {
         }
     }
 
-    var statusText: String {
-        if let errorMessage { return errorMessage }
-        if noAudioDetected { return "No audio is being detected." }
-        switch status {
-        case .idle: return "Capt is off"
-        case .preparingModel(let p):
-            if let p, p > 0 { return "Downloading model \(Int(p * 100))%" }
-            return "Preparing model…"
-        case .ready: return "Starting…"
-        case .running: return "Listening (\(localeName(settings.locale)))"
-        case .stopped: return "Capt is off"
-        }
-    }
-
     func loadLocales() async {
         supportedLocales = await SpeechAnalyzerEngine.supportedLocales
             .sorted { localeName($0) < localeName($1) }
-        installedLocales = await SpeechAnalyzerEngine.installedLocales
-    }
-
-    func toggle() {
-        setEnabled(!isEnabled)
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -130,11 +107,6 @@ final class AppModel {
         status = .idle
         noAudioDetected = false
         isEnabled = false
-    }
-
-    func selectLocale(tag: String) {
-        guard let locale = supportedLocales.first(where: { $0.identifier(.bcp47) == tag }) else { return }
-        selectLocale(locale)
     }
 
     func selectLocale(_ locale: Locale) {
