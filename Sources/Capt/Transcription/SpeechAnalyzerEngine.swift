@@ -102,6 +102,7 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         resultsTask?.cancel()
         resultsTask = nil
         continuation.yield(.status(.stopped))
+        continuation.finish()
     }
 
     private func ensureAssets(for transcriber: SpeechTranscriber, locale: Locale) async throws {

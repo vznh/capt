@@ -44,23 +44,33 @@ public final class CaptionSession {
             }
         }
 
-        try await engine.prepare()
-        try await engine.start()
+        do {
+            try await engine.prepare()
+            try await engine.start()
+        } catch {
+            await unwind()
+            throw error
+        }
 
         let watchdog = SilenceWatchdog()
         let engine = self.engine
-        try capture.start { [weak self] buffer in
-            if let peak = AudioLevel.peak(of: buffer) {
-                switch watchdog.observe(peak: peak, at: Date()) {
-                case .silentTooLong:
-                    Task { @MainActor in self?.onSilenceChanged?(true) }
-                case .audioResumed:
-                    Task { @MainActor in self?.onSilenceChanged?(false) }
-                case .ok:
-                    break
+        do {
+            try capture.start { [weak self] buffer in
+                if let peak = AudioLevel.peak(of: buffer) {
+                    switch watchdog.observe(peak: peak, at: Date()) {
+                    case .silentTooLong:
+                        Task { @MainActor in self?.onSilenceChanged?(true) }
+                    case .audioResumed:
+                        Task { @MainActor in self?.onSilenceChanged?(false) }
+                    case .ok:
+                        break
+                    }
                 }
+                engine.send(buffer)
             }
-            engine.send(buffer)
+        } catch {
+            await unwind()
+            throw error
         }
 
         idleTask = Task { [weak self] in
@@ -76,8 +86,15 @@ public final class CaptionSession {
 
     public func stop() async {
         guard isRunning else { return }
-        capture.stop()
-        await engine.stop()
+        await unwind()
+        store.clear()
+        status = .stopped
+        onStatus?(.stopped)
+    }
+
+    /// Cancels every task first so nothing can write to the store mid-teardown, then stops audio and the engine.
+    /// Safe to call from a failed start as well as from `stop()`.
+    private func unwind() async {
         eventTask?.cancel()
         idleTask?.cancel()
         partialCooldown?.cancel()
@@ -85,10 +102,9 @@ public final class CaptionSession {
         idleTask = nil
         partialCooldown = nil
         pendingPartial = nil
-        store.clear()
+        capture.stop()
+        await engine.stop()
         isRunning = false
-        status = .stopped
-        onStatus?(.stopped)
     }
 
     private func handle(_ event: CaptionEvent) {
