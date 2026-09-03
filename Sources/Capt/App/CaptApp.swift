@@ -21,7 +21,7 @@ struct MenuContent: View {
 
     var body: some View {
         Text(model.statusText)
-        Button(model.isRunning ? "Stop Scribing" : "Start Scribing") { model.toggle() }
+        Button(model.isRunning ? "Stop Capt" : "Start Capt") { model.toggle() }
             .keyboardShortcut("c", modifiers: [.command, .shift])
 
         Divider()

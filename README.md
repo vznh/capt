@@ -19,7 +19,7 @@ Scripts/build.sh debug    # bundle only
 swift test                # CaptionCore unit tests, no AppKit needed
 ```
 
-Click the menu bar icon and choose **Start Scribing** (⇧⌘C). The first run asks for
+Click the menu bar icon and choose **Start Capt** (⇧⌘C). The first run asks for
 **System Audio Recording** permission and downloads the speech model for your language.
 
 ## Layout
