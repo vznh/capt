@@ -71,9 +71,10 @@ private struct ResizeHUDView: View {
     let onDone: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 6) {
             Button("Reset", action: onReset)
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
             Button("Cancel", action: onCancel)
                 .buttonStyle(.bordered)
                 .keyboardShortcut(.cancelAction)
