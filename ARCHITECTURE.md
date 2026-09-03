@@ -13,8 +13,8 @@ SpeechAnalyzerEngine      Converts to the analyzer's format (AudioFormatConverte
 CaptionSession            Owns one run: prepares the engine, starts capture, throttles partials to 250 ms,
       │                   runs the silence watchdog and the idle timer, unwinds everything on stop or failure.
       ▼
-CaptionStore              Pure state on the main actor: strips sound annotations, keeps the last two
-      │                   sentences, holds an optional preview text.
+CaptionStore              Pure state on the main actor: strips sound annotations, keeps a bounded
+      │                   rolling caption history, and holds an optional preview text.
       ▼
 CaptionView in CaptionPanel   A click-through NSPanel above every window draws the store's text.
 ```

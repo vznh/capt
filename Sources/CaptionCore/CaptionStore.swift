@@ -1,12 +1,11 @@
 import Foundation
 import Observation
 
-/// Holds the text currently shown on screen, capped to the last `maxSentences` sentences.
-/// Pure state, no UI.
+/// Holds a bounded rolling window of recent caption text. Pure state, no UI.
 @MainActor
 @Observable
 public final class CaptionStore {
-    /// Finalized text, already reduced to the trailing sentences.
+    /// Finalized text, already reduced to the rolling history window.
     public private(set) var committed: String = ""
     /// Sample text shown in place of live captions while adjusting settings.
     public private(set) var previewText: String?
@@ -18,15 +17,15 @@ public final class CaptionStore {
     /// Safety cap for speech with no sentence boundaries.
     public let maxCharacters: Int
 
-    public init(maxSentences: Int = 2, maxCharacters: Int = 240) {
+    public init(maxSentences: Int = 12, maxCharacters: Int = 1200) {
         self.maxSentences = maxSentences
         self.maxCharacters = maxCharacters
     }
 
     // MARK: - Rendering
 
-    /// Text to render: an active preview if set, otherwise the last
-    /// `maxSentences` sentences of committed text plus the live partial.
+    /// Text to render: an active preview if set, otherwise the recent committed
+    /// text plus the live partial.
     public var displayText: String {
         if let previewText {
             return previewText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -100,7 +99,12 @@ public final class CaptionStore {
     private static func tail(of text: String, sentences: Int, characters: Int) -> String {
         var result = SentenceSplitter.split(text).suffix(sentences).joined(separator: " ")
         if result.count > characters {
-            result = String(result.suffix(characters))
+            let suffix = result.suffix(characters)
+            if let boundary = suffix.firstIndex(where: \.isWhitespace) {
+                result = String(suffix[suffix.index(after: boundary)...])
+            } else {
+                result = String(suffix)
+            }
         }
         return result
     }

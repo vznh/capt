@@ -65,7 +65,6 @@ final class SettingsStore {
     /// Opacities from the product spec: fill 40%, text 80%.
     let fillOpacity: Double = 0.4
     let textOpacity: Double = 0.8
-    let maxLines = 2
 
     var locale: Locale {
         Locale(identifier: localeIdentifier)

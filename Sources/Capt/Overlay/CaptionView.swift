@@ -1,8 +1,8 @@
 import CaptionCore
 import SwiftUI
 
-/// Caption block pinned to the bottom of the overlay. The box hugs its text and is centered, so it
-/// grows outward from the middle and upward from the bottom edge as words arrive. No animation.
+/// Caption block pinned to the bottom of the overlay. Sentences stack upward, and long sentences
+/// wrap naturally. When the region fills, its oldest lines roll out above the clipped top edge.
 struct CaptionView: View {
     let store: CaptionStore
     let settings: SettingsStore
@@ -24,37 +24,35 @@ struct CaptionView: View {
         contrast == .increased ? 1.0 : 0.6
     }
 
+    /// A hard sentence boundary should also be a visual boundary. SwiftUI handles
+    /// softer line wrapping within each sentence at word boundaries.
+    private var stackedText: String {
+        store.sentences.joined(separator: "\n")
+    }
+
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                if !store.displayText.isEmpty {
-                    caption(lineLimit: lines(fitting: geometry.size.height))
+                if !stackedText.isEmpty {
+                    caption(stackedText)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
         }
         .padding(.bottom, 12)
         .transaction { $0.animation = nil }
     }
 
-    /// The caption region's height caps how many lines show, so a short box never overflows.
-    private func lines(fitting height: CGFloat) -> Int {
-        let lineHeight = settings.fontSize * 1.2 + settings.fontSize * 0.15
-        let usable = height - 16
-        return max(1, min(settings.maxLines, Int(usable / lineHeight)))
-    }
-
-    private func caption(lineLimit: Int) -> some View {
-        Text(store.displayText)
+    private func caption(_ text: String) -> some View {
+        Text(text)
             .font(.system(size: settings.fontSize, weight: .medium))
             .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
             // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
             .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
             .lineSpacing(settings.fontSize * 0.15)
             .multilineTextAlignment(.center)
-            .lineLimit(lineLimit)
-            .truncationMode(.head)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
