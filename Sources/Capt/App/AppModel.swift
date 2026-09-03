@@ -16,7 +16,13 @@ final class AppModel {
     private(set) var supportedLocales: [Locale] = []
     private(set) var installedLocales: [Locale] = []
 
+    /// What the user asked for. Flips immediately so the switch does not snap back while the engine starts.
+    private(set) var isEnabled = false
+
     var isRunning: Bool { session?.isRunning ?? false }
+
+    /// BCP 47 tag of the chosen locale, matching the tags used by the language picker.
+    var selectedLocaleTag: String { settings.locale.identifier(.bcp47) }
 
     var statusText: String {
         if let errorMessage { return errorMessage }
@@ -39,11 +45,18 @@ final class AppModel {
     }
 
     func toggle() {
-        Task { isRunning ? await stop() : await start() }
+        setEnabled(!isEnabled)
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        guard enabled != isEnabled else { return }
+        isEnabled = enabled
+        Task { enabled ? await start() : await stop() }
     }
 
     func start() async {
         guard session == nil else { return }
+        isEnabled = true
         errorMessage = nil
         let engine = settings.engineKind.make(locale: settings.locale)
         let session = CaptionSession(capture: SystemAudioTap(), engine: engine, store: store)
@@ -58,6 +71,7 @@ final class AppModel {
             await session.stop()
             self.session = nil
             status = .idle
+            isEnabled = false
         }
     }
 
@@ -66,6 +80,12 @@ final class AppModel {
         session = nil
         status = .idle
         noAudioDetected = false
+        isEnabled = false
+    }
+
+    func selectLocale(tag: String) {
+        guard let locale = supportedLocales.first(where: { $0.identifier(.bcp47) == tag }) else { return }
+        selectLocale(locale)
     }
 
     func selectLocale(_ locale: Locale) {
