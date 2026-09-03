@@ -71,4 +71,12 @@ the text fully opaque.
 
 ## Credits
 
-Core Audio property helpers adapted from [insidegui/AudioCap](https://github.com/insidegui/AudioCap) (MIT).
+Core Audio property helpers adapted from [insidegui/AudioCap](https://github.com/insidegui/AudioCap), BSD 2-Clause. Full notice in [NOTICE](NOTICE).
+
+## License and legal
+
+Capt is source-available under the [Functional Source License 1.1, MIT Future License](LICENSE):
+use, modify, and redistribute it for any purpose except building a competing commercial product,
+and each version becomes MIT-licensed two years after release. Third-party notices are in
+[NOTICE](NOTICE). End-user terms are in [TERMS.md](TERMS.md) and the privacy policy in
+[PRIVACY.md](PRIVACY.md).

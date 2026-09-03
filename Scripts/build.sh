@@ -14,6 +14,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Capt"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp NOTICE LICENSE "$APP/Contents/Resources/"   # third-party and source license notices ship with the binary
 echo -n "APPL????" > "$APP/Contents/PkgInfo"
 
 codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements \

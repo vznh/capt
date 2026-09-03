@@ -1,4 +1,5 @@
-// Adapted from insidegui/AudioCap (MIT). Minimal property-read helpers for Core Audio.
+// Adapted from insidegui/AudioCap, Copyright (c) 2024 Guilherme Rambo, BSD 2-Clause. See NOTICE.
+// Minimal property-read helpers for Core Audio.
 import AudioToolbox
 import Foundation
 
