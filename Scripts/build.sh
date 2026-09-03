@@ -5,7 +5,47 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 APP="build/Capt.app"
-SIGN_IDENTITY="${CAPT_SIGN_IDENTITY:--}"   # "-" = ad-hoc. Set to a Developer ID to keep TCC grants across rebuilds.
+
+# Signing identity resolution, in order of stability:
+#   1. Explicit CAPT_SIGN_IDENTITY override (certificate name or SHA-1 hash).
+#   2. Auto-selected keychain identity: Developer ID Application, then Apple
+#      Development. A stable identity keeps the TCC grant across rebuilds
+#      (TN3127): ad-hoc identities change on every build, so macOS re-asks
+#      the System Audio Recording permission each time.
+#   3. Ad-hoc ("-"). Allowed, but warned about: privacy permissions will be
+#      requested again after every rebuild.
+resolve_sign_identity() {
+  # Explicit override wins, verbatim. "-" means ad-hoc on purpose.
+  local req="${CAPT_SIGN_IDENTITY:-}"
+  if [ -n "$req" ]; then
+    printf '%s' "$req"
+    return
+  fi
+
+  local identities hash
+  identities="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+  # Prefer Developer ID Application, then Apple Development. No names are
+  # hardcoded: the certificate description is read from the keychain output.
+  for kind in "Developer ID Application" "Apple Development"; do
+    hash="$(printf '%s\n' "$identities" \
+      | sed -n "s/^[[:space:]]*[0-9][0-9]*) \([0-9A-Fa-f]\{40\}\) \"${kind}:.*$/\1/p" \
+      | head -n 1)"
+    if [ -n "$hash" ]; then
+      printf '%s' "$hash"
+      return
+    fi
+  done
+
+  printf -- '-'
+}
+
+SIGN_IDENTITY="$(resolve_sign_identity)"
+if [ -z "$SIGN_IDENTITY" ] || [ "$SIGN_IDENTITY" = "-" ]; then
+  SIGN_IDENTITY="-"
+  echo "warning: Capt.app will be ad-hoc signed (no stable identity selected)." >&2
+  echo "warning: privacy permissions may be requested again after each rebuild." >&2
+fi
+echo "Signing with: $SIGN_IDENTITY" >&2
 
 swift build -c "$CONFIG"
 BIN="$(swift build -c "$CONFIG" --show-bin-path)/Capt"
@@ -17,10 +57,12 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp NOTICE LICENSE "$APP/Contents/Resources/"   # third-party and source license notices ship with the binary
 echo -n "APPL????" > "$APP/Contents/PkgInfo"
 
+# Fail loudly rather than silently downgrading: a failed signature means the
+# app will not launch correctly, so never continue past it.
 if ! codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements \
     --options runtime --timestamp=none "$APP"; then
-  echo "warning: hardened-runtime signing failed; retrying without --options runtime" >&2
-  codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements "$APP"
+  echo "error: signing Capt.app failed with identity '$SIGN_IDENTITY'." >&2
+  exit 1
 fi
 
 echo "Built $APP"

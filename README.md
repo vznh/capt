@@ -73,9 +73,10 @@ makes the text fully opaque.
 
 - **Language is chosen, not detected.** SpeechAnalyzer needs a locale up front. Auto-detection needs a
   cloud engine behind the same protocol.
-- **Ad-hoc signing resets permissions on every rebuild.** macOS keys the audio-capture grant to the code
-  hash. Set `CAPT_SIGN_IDENTITY` to a certificate name to keep it. Always launch via `open`, never the
-  raw binary.
+- **Signing identity is chosen automatically.** `build.sh` prefers a Developer ID Application or
+  Apple Development certificate from the keychain, so the code signature (and the System Audio
+  Recording grant keyed to it) survives rebuilds. `CAPT_SIGN_IDENTITY` overrides the choice;
+  `-` forces ad-hoc, and the script warns that permissions may be re-requested after each rebuild.
 - If captions never appear and the panel says no audio is being detected, grant System Audio Recording
   in System Settings › Privacy & Security.
 

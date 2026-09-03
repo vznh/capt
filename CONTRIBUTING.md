@@ -11,8 +11,10 @@ swift build               # compile without bundling
 Requires macOS 26 and Xcode 26. Always launch the bundled app with `open` or `Scripts/run.sh`,
 never the raw binary, so macOS attributes the audio permission to Capt rather than your terminal.
 
-Builds are ad-hoc signed unless `CAPT_SIGN_IDENTITY` names a certificate, so the System Audio
-Recording permission is asked again after each rebuild. See [README.md](README.md#known-limitations).
+The signing identity is chosen automatically: `build.sh` prefers a Developer ID Application or
+Apple Development certificate from the keychain, falling back to ad-hoc with a warning that
+privacy permissions may be re-requested after each rebuild. `CAPT_SIGN_IDENTITY` overrides the
+choice; see [README.md](README.md#known-limitations).
 
 ## Layout rules
 
