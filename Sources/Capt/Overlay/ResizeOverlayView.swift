@@ -37,49 +37,65 @@ final class ResizeOverlayView: NSView {
             case .left, .right: .resizeLeftRight
             }
         }
+
+        var indicatorColor: NSColor {
+            switch self {
+            case .top, .bottom: .systemBlue
+            case .left, .right: .systemOrange
+            }
+        }
     }
 
     /// A real AppKit subview, rather than a layer attached before AppKit creates the parent's
     /// backing layer. This guarantees the handle enters the rendered view hierarchy.
     private final class EdgeIndicatorView: NSView {
+        private let color: NSColor
+
+        init(color: NSColor) {
+            self.color = color
+            super.init(frame: .zero)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) is not supported")
+        }
+
         override var isOpaque: Bool {
             false
         }
 
         override func draw(_ dirtyRect: NSRect) {
-            let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
             let radius = min(bounds.width, bounds.height) / 2
             let path = NSBezierPath(
-                roundedRect: rect,
+                roundedRect: bounds,
                 xRadius: radius,
                 yRadius: radius
             )
 
             NSGraphicsContext.saveGraphicsState()
             let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.7)
-            shadow.shadowBlurRadius = 1
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
+            shadow.shadowBlurRadius = 2
             shadow.shadowOffset = .zero
             shadow.set()
-            NSColor.white.setFill()
+            color.setFill()
             path.fill()
             NSGraphicsContext.restoreGraphicsState()
-
-            path.lineWidth = 1
-            NSColor.black.withAlphaComponent(0.7).setStroke()
-            path.stroke()
         }
     }
 
     // MARK: - Constants
 
     private static let indicatorLength: CGFloat = 64
-    private static let indicatorThickness: CGFloat = 3
+    private static let indicatorThickness: CGFloat = 5
     private static let indicatorInset: CGFloat = 5
     /// Invisible padding around each indicator keeps the short visual bars easy to acquire.
     private static let hitPadding: CGFloat = 18
-    private static let idleIndicatorOpacity: Float = 0.58
-    private static let hoveredIndicatorOpacity: Float = 1
+    private static let idleIndicatorOpacity: CGFloat = 0.62
+    private static let dimmedIndicatorOpacity: CGFloat = 0.38
+    private static let hoveredIndicatorOpacity: CGFloat = 0.92
+    private static let draggedIndicatorOpacity: CGFloat = 1
     private static let hoverDuration: TimeInterval = 0.14
     /// Width of the border stroked around the overlay bounds, in points.
     private static let borderWidth: CGFloat = 1
@@ -109,6 +125,7 @@ final class ResizeOverlayView: NSView {
     private var startWindowFrame: CGRect = .zero
     private var closedHandCursorIsPushed = false
     private var hoveredEdge: Edge?
+    private var draggedEdge: Edge?
     private var indicatorViews: [Edge: EdgeIndicatorView] = [:]
     private var edgeTrackingAreas: [NSTrackingArea] = []
     private var cursorTrackingArea: NSTrackingArea?
@@ -127,8 +144,8 @@ final class ResizeOverlayView: NSView {
 
     private func commonInit() {
         for edge in Edge.allCases {
-            let indicator = EdgeIndicatorView(frame: .zero)
-            indicator.alphaValue = CGFloat(Self.idleIndicatorOpacity)
+            let indicator = EdgeIndicatorView(color: edge.indicatorColor)
+            indicator.alphaValue = Self.idleIndicatorOpacity
             addSubview(indicator)
             indicatorViews[edge] = indicator
         }
@@ -263,15 +280,37 @@ final class ResizeOverlayView: NSView {
     private func setHoveredEdge(_ edge: Edge?) {
         guard edge != hoveredEdge else { return }
         hoveredEdge = edge
+        updateIndicatorOpacities(animated: true)
+    }
+
+    private func updateIndicatorOpacities(animated: Bool) {
+        let changes = {
+            for (edge, indicator) in self.indicatorViews {
+                let opacity: CGFloat = if edge == self.draggedEdge {
+                    Self.draggedIndicatorOpacity
+                } else if edge == self.hoveredEdge {
+                    Self.hoveredIndicatorOpacity
+                } else if self.draggedEdge != nil || self.hoveredEdge != nil {
+                    Self.dimmedIndicatorOpacity
+                } else {
+                    Self.idleIndicatorOpacity
+                }
+                indicator.animator().alphaValue = opacity
+            }
+        }
+
+        guard animated else {
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0
+            changes()
+            NSAnimationContext.endGrouping()
+            return
+        }
+
         NSAnimationContext.runAnimationGroup { context in
             context.duration = Self.hoverDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            for (candidate, indicator) in indicatorViews {
-                let opacity = candidate == edge
-                    ? Self.hoveredIndicatorOpacity
-                    : Self.idleIndicatorOpacity
-                indicator.animator().alphaValue = CGFloat(opacity)
-            }
+            changes()
         }
     }
 
@@ -279,9 +318,12 @@ final class ResizeOverlayView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         // Anchor the drag: the location now and the frame as it stands are both frozen until mouse-up.
-        hitRegion = region(at: event.locationInWindow)
+        let local = convert(event.locationInWindow, from: nil)
+        draggedEdge = edge(at: local)
+        hitRegion = draggedEdge?.hitRegion ?? .interior
         startMouseLocation = NSEvent.mouseLocation
         startWindowFrame = windowFrame
+        updateIndicatorOpacities(animated: true)
         if hitRegion == .interior {
             NSCursor.closedHand.push()
             closedHandCursorIsPushed = true
@@ -304,20 +346,18 @@ final class ResizeOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        draggedEdge = nil
+        updateIndicatorOpacities(animated: true)
         releaseClosedHandCursor()
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         if newWindow == nil {
+            draggedEdge = nil
+            updateIndicatorOpacities(animated: false)
             releaseClosedHandCursor()
         }
         super.viewWillMove(toWindow: newWindow)
-    }
-
-    /// Which grab region contains `locationInWindow` (converted to screen coordinates).
-    private func region(at locationInWindow: NSPoint) -> HitRegion {
-        let local = convert(locationInWindow, from: nil)
-        return edge(at: local)?.hitRegion ?? .interior
     }
 
     private func edge(at point: NSPoint) -> Edge? {
