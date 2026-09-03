@@ -41,6 +41,7 @@ struct AdditionalSettingsView: View {
         }
         .padding(16)
         .frame(width: 320)
+        .environment(\.controlActiveState, .active)
         .onAppear { model.beginPreview() }
         .onDisappear { model.endPreview() }
     }
@@ -84,6 +85,7 @@ private struct OpacityControl: View {
             Text(title)
                 .frame(width: 32, alignment: .leading)
             Slider(value: $value, in: range, step: 0.05)
+                .tint(.accentColor)
             Text(value, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
                 .frame(width: 38, alignment: .trailing)

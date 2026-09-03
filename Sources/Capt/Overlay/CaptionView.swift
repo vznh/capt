@@ -1,5 +1,6 @@
 import AppKit
 import CaptionCore
+import CoreImage
 import SwiftUI
 
 /// Caption block pinned to the bottom of the overlay. Up to three captions stack upward as a queue,
@@ -23,18 +24,6 @@ struct CaptionView: View {
 
     private var edgeOpacity: Double {
         contrast == .increased ? 0.6 : 0.25
-    }
-
-    private var captionFill: Color {
-        settings.invertsCaptionBackground
-            ? settings.theme.text(for: colorScheme)
-            : settings.theme.fill(for: colorScheme)
-    }
-
-    private var captionForeground: Color {
-        settings.invertsCaptionBackground
-            ? settings.theme.fill(for: colorScheme)
-            : settings.theme.text(for: colorScheme)
     }
 
     private var lineSpacing: CGFloat {
@@ -77,9 +66,9 @@ struct CaptionView: View {
     private func caption(_ text: String) -> some View {
         captionText(text)
             .font(.system(size: settings.fontSize, weight: .medium))
-            .foregroundStyle(captionForeground.opacity(textOpacity))
+            .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
             // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
-            .shadow(color: captionFill.opacity(edgeOpacity), radius: 0.6, x: 0, y: 0.5)
+            .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 0.6, x: 0, y: 0.5)
             .tracking(characterSpacing)
             .lineSpacing(lineSpacing)
             .multilineTextAlignment(.center)
@@ -88,11 +77,18 @@ struct CaptionView: View {
             .clipped()
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(
-                captionFill.opacity(fillOpacity),
-                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
-            )
+            .background { captionBackground }
             .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    @ViewBuilder
+    private var captionBackground: some View {
+        if settings.invertsCaptionBackground {
+            InvertedCaptionBackground(opacity: fillOpacity)
+        } else {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
+        }
     }
 
     @ViewBuilder
@@ -142,5 +138,27 @@ struct CaptionView: View {
         remainder.font = .system(size: settings.fontSize, weight: .regular)
         result += emphasized
         result += remainder
+    }
+}
+
+/// Uses AppKit's backdrop-filter API so inversion samples pixels behind the transparent caption
+/// window. Unlike a SwiftUI difference blend, this view disappears cleanly with the caption.
+private struct InvertedCaptionBackground: NSViewRepresentable {
+    let opacity: Double
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 4
+        view.layer?.cornerCurve = .continuous
+        view.layer?.masksToBounds = true
+        if let inversion = CIFilter(name: "CIColorInvert") {
+            view.backgroundFilters = [inversion]
+        }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        view.alphaValue = opacity
     }
 }
