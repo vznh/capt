@@ -17,9 +17,27 @@ struct CaptionView: View {
     private var edgeOpacity: Double { contrast == .increased ? 1.0 : 0.6 }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            if !store.displayText.isEmpty {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                if !store.displayText.isEmpty {
+                    caption(lineLimit: lines(fitting: geometry.size.height))
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .padding(.bottom, 12)
+        .transaction { $0.animation = nil }
+    }
+
+    /// The caption region's height caps how many lines show, so a short box never overflows.
+    private func lines(fitting height: CGFloat) -> Int {
+        let lineHeight = settings.fontSize * 1.2 + settings.fontSize * 0.15
+        let usable = height - 16
+        return max(1, min(settings.maxLines, Int(usable / lineHeight)))
+    }
+
+    private func caption(lineLimit: Int) -> some View {
                 Text(store.displayText)
                     .font(.system(size: settings.fontSize, weight: .medium))
                     .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
@@ -27,7 +45,7 @@ struct CaptionView: View {
                     .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
                     .lineSpacing(settings.fontSize * 0.15)
                     .multilineTextAlignment(.center)
-                    .lineLimit(settings.maxLines)
+                    .lineLimit(lineLimit)
                     .truncationMode(.head)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
@@ -37,10 +55,5 @@ struct CaptionView: View {
                         in: RoundedRectangle(cornerRadius: 4, style: .continuous)
                     )
                     .accessibilityAddTraits(.updatesFrequently)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.bottom, 12)
-        .transaction { $0.animation = nil }
     }
 }

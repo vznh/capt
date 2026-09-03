@@ -25,6 +25,9 @@ final class AppModel {
 
     let store = CaptionStore()
     let settings = SettingsStore()
+    let layout = CaptionLayoutStore()
+    private(set) var overlay: OverlayController?
+    private(set) var resize: ResizeController?
 
     // MARK: - State
 
@@ -75,6 +78,22 @@ final class AppModel {
     }
 
     // MARK: - Intents
+
+    /// Creates the per-display caption panels. Called once from the app delegate.
+    func startOverlay() {
+        guard overlay == nil else { return }
+        let overlay = OverlayController(store: store, settings: settings, layout: layout)
+        overlay.start()
+        self.overlay = overlay
+        resize = ResizeController(overlay: overlay, store: store)
+    }
+
+    /// Enters resize mode on every display with a sample caption showing.
+    func beginResize() {
+        resize?.begin(previewText: Self.sampleSentence)
+    }
+
+    var isResizing: Bool { resize?.isActive ?? false }
 
     func loadLocales() async {
         supportedLocales = await SpeechAnalyzerEngine.supportedLocales

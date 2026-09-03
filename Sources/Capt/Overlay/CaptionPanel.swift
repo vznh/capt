@@ -3,7 +3,11 @@ import CaptionCore
 import SwiftUI
 
 /// Transparent, click-through panel that floats above everything, including fullscreen video.
+/// One exists per display; `OverlayController` positions it from the layout store. During resize
+/// mode it becomes interactive and hosts a `ResizeOverlayView` on top of the captions.
 final class CaptionPanel: NSPanel {
+    private var resizeOverlay: NSView?
+
     init(store: CaptionStore, settings: SettingsStore) {
         super.init(
             contentRect: .zero,
@@ -27,13 +31,23 @@ final class CaptionPanel: NSPanel {
         contentView = host
     }
 
-    /// Bottom-centered strip, 70% of the screen width.
-    func position(on screen: NSScreen? = NSScreen.main) {
-        guard let screen else { return }
-        let bounds = screen.frame
-        let width = min(bounds.width * 0.7, 1200)
-        let height: CGFloat = 200
-        let origin = NSPoint(x: bounds.midX - width / 2, y: bounds.minY + 48)
-        setFrame(NSRect(origin: origin, size: NSSize(width: width, height: height)), display: true)
+    /// Interactive panels accept mouse events; otherwise clicks fall through to whatever is beneath.
+    func setInteractive(_ interactive: Bool) {
+        ignoresMouseEvents = !interactive
+    }
+
+    /// Lays `view` over the captions, filling the panel and tracking its size.
+    func showResizeOverlay(_ view: NSView) {
+        hideResizeOverlay()
+        guard let contentView else { return }
+        view.frame = contentView.bounds
+        view.autoresizingMask = [.width, .height]
+        contentView.addSubview(view, positioned: .above, relativeTo: nil)
+        resizeOverlay = view
+    }
+
+    func hideResizeOverlay() {
+        resizeOverlay?.removeFromSuperview()
+        resizeOverlay = nil
     }
 }

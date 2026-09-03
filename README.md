@@ -28,6 +28,9 @@ permission and downloads the speech model for your language.
 - **Language** picks the recognition locale. Capt cannot auto-detect the spoken language.
 - **Theme** is System, Dark, or Light. **Text Size** opens a size menu; hover it and scroll to adjust
   while a sample caption shows on screen.
+- **Resize** dims the screen and lets you drag the caption box by its edges to change its width and
+  height, or drag its middle to move it. Done saves, Cancel restores, Reset returns the default. The
+  box is remembered per display.
 - Hold ⌘ with the panel open to see how many words Capt has transcribed.
 
 ## How it works
@@ -49,8 +52,8 @@ Sources/
     App/Panel/            # menu bar panel: view, style tokens, row building blocks
     Audio/                # SystemAudioTap (Core Audio process tap), format conversion
     Transcription/        # EngineKind, SpeechAnalyzerEngine
-    Overlay/              # CaptionPanel (NSPanel), CaptionView (SwiftUI)
-    Settings/             # UserDefaults-backed preferences
+    Overlay/              # CaptionPanel + CaptionView, OverlayController, resize mode (dim, handles, HUD)
+    Settings/             # UserDefaults-backed preferences and per-display caption frames
     Permissions/          # deep link to the audio recording pane
 Resources/                # Info.plist, entitlements
 Scripts/                  # build.sh bundles the .app, run.sh launches it

@@ -45,6 +45,9 @@ struct MenuPanelView: View {
             .onHover { hovering in
                 hovering ? model.beginPreview() : model.endPreview()
             }
+            ActionRow(title: "Resize", symbol: "arrow.up.left.and.arrow.down.right") {
+                model.beginResize()
+            }
             PanelDivider()
 
             ActionRow(title: "Permissions", symbol: "arrow.up.forward.square") {
