@@ -51,7 +51,7 @@ struct MenuPanelView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text("Capt")
                         .font(PanelFont.title)
                     Text(model.activityLabel)
