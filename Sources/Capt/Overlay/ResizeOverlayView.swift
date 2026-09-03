@@ -99,12 +99,11 @@ final class ResizeOverlayView: NSView {
 
     // MARK: - Constants
 
-    private static let indicatorLength: CGFloat = 96
+    private static let indicatorLengthRatio: CGFloat = 0.6
     private static let indicatorThickness: CGFloat = 1.5
     /// Keeps each thinner indicator centered at the same distance from its edge as before.
     private static let indicatorInset: CGFloat = 6.75
-    /// Preserves the previous 100 × 41 point acquisition area independently of visual size.
-    private static let hitLength: CGFloat = 100
+    /// Preserves the generous acquisition depth while its length follows the visible indicator.
     private static let hitThickness: CGFloat = 41
     private static let idleIndicatorOpacity: CGFloat = 0.82
     private static let dimmedIndicatorOpacity: CGFloat = 0.56
@@ -226,7 +225,10 @@ final class ResizeOverlayView: NSView {
     }
 
     private func indicatorRect(for edge: Edge) -> NSRect {
-        let length = Self.indicatorLength
+        let length = switch edge {
+        case .top, .bottom: bounds.width * Self.indicatorLengthRatio
+        case .left, .right: bounds.height * Self.indicatorLengthRatio
+        }
         let thickness = Self.indicatorThickness
         let inset = Self.indicatorInset
         switch edge {
@@ -250,17 +252,17 @@ final class ResizeOverlayView: NSView {
         let rect = switch edge {
         case .top, .bottom:
             NSRect(
-                x: indicator.midX - Self.hitLength / 2,
+                x: indicator.minX,
                 y: indicator.midY - Self.hitThickness / 2,
-                width: Self.hitLength,
+                width: indicator.width,
                 height: Self.hitThickness
             )
         case .left, .right:
             NSRect(
                 x: indicator.midX - Self.hitThickness / 2,
-                y: indicator.midY - Self.hitLength / 2,
+                y: indicator.minY,
                 width: Self.hitThickness,
-                height: Self.hitLength
+                height: indicator.height
             )
         }
         return rect.intersection(bounds)
