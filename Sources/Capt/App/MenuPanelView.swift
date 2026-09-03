@@ -29,7 +29,10 @@ struct MenuPanelView: View {
             }
             MenuRow(title: "Text Size", value: "\(Int(model.settings.fontSize)) pt") {
                 ForEach(Self.fontSizes, id: \.self) { size in
-                    Button("\(Int(size)) pt") { model.settings.fontSize = size }
+                    Button("\(Int(size)) pt") {
+                        model.settings.fontSize = size
+                        model.previewCaptions()
+                    }
                 }
             }
             PanelDivider()

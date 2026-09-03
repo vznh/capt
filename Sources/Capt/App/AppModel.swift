@@ -14,6 +14,7 @@ final class AppModel {
     private(set) var errorMessage: String?
     private(set) var noAudioDetected = false
     private(set) var supportedLocales: [Locale] = []
+    private var previewTask: Task<Void, Never>?
     private(set) var installedLocales: [Locale] = []
 
     /// What the user asked for. Flips immediately so the switch does not snap back while the engine starts.
@@ -115,5 +116,16 @@ final class AppModel {
 
     func localeName(_ locale: Locale) -> String {
         Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
+    }
+
+    /// Shows sample caption text in the overlay for a few seconds so the user can judge the font size.
+    func previewCaptions() {
+        store.showPreview("Captions will look like this. Pick a size that reads comfortably.")
+        previewTask?.cancel()
+        previewTask = Task {
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            store.clearPreview()
+        }
     }
 }
