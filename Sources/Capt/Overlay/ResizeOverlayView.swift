@@ -56,8 +56,8 @@ final class ResizeOverlayView: NSView {
 
             NSGraphicsContext.saveGraphicsState()
             let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.5)
-            shadow.shadowBlurRadius = 1
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
+            shadow.shadowBlurRadius = 1.5
             shadow.shadowOffset = .zero
             shadow.set()
             NSColor.white.setFill()
@@ -68,16 +68,16 @@ final class ResizeOverlayView: NSView {
 
     // MARK: - Constants
 
-    private static let indicatorLength: CGFloat = 88
+    private static let indicatorLength: CGFloat = 96
     private static let indicatorThickness: CGFloat = 1.5
     /// Keeps each thinner indicator centered at the same distance from its edge as before.
     private static let indicatorInset: CGFloat = 6.75
     /// Preserves the previous 100 × 41 point acquisition area independently of visual size.
     private static let hitLength: CGFloat = 100
     private static let hitThickness: CGFloat = 41
-    private static let idleIndicatorOpacity: CGFloat = 0.62
-    private static let dimmedIndicatorOpacity: CGFloat = 0.38
-    private static let hoveredIndicatorOpacity: CGFloat = 0.92
+    private static let idleIndicatorOpacity: CGFloat = 0.82
+    private static let dimmedIndicatorOpacity: CGFloat = 0.56
+    private static let hoveredIndicatorOpacity: CGFloat = 1
     private static let draggedIndicatorOpacity: CGFloat = 1
     private static let hoverDuration: TimeInterval = 0.14
     /// Width of the border stroked around the overlay bounds, in points.
