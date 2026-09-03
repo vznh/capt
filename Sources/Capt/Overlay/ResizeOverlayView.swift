@@ -3,7 +3,6 @@ import AppKit
 /// Transparent AppKit view laid over the caption panel during resize mode. Draws a border and four edge-midpoint handles, and turns mouse drags into a new window frame: edges resize, the interior moves. All math is done in screen coordinates using `NSEvent.mouseLocation` so it stays correct while the window itself moves under the cursor.
 @MainActor
 final class ResizeOverlayView: NSView {
-
     // MARK: - Types
 
     /// Which part of the overlay a mouse event landed on. Drives both cursor feedback and the per-drag geometry math. Corners are not handles: they fall through to `interior` (move).
@@ -34,14 +33,14 @@ final class ResizeOverlayView: NSView {
         }
     }
 
-    /// Given a proposed frame, returns the frame actually allowed (min size, on-screen, etc.). Injected so this view has no dependency on the layout store.
-    var clamp: (CGRect) -> CGRect = { $0 }
+    /// Screen region the caption window must remain inside.
+    var allowedFrame: CGRect = .zero
+
+    /// Smallest allowed caption-window size.
+    var minimumSize: CGSize = .zero
 
     /// Called with the clamped frame on every drag step. The controller applies it to the window and sets `windowFrame`.
     var onFrameChange: ((CGRect) -> Void)?
-
-    /// Called on mouse-up after a drag.
-    var onDragEnd: (() -> Void)?
 
     // MARK: - Drag state
 
@@ -51,6 +50,7 @@ final class ResizeOverlayView: NSView {
     private var startMouseLocation: CGPoint = .zero
     /// `windowFrame` captured at mouse-down. Every drag step recomputes from this anchor, never from the previous step's result, so a clamped frame cannot make the box jitter.
     private var startWindowFrame: CGRect = .zero
+    private var closedHandCursorIsPushed = false
 
     // MARK: - Setup
 
@@ -71,13 +71,19 @@ final class ResizeOverlayView: NSView {
     }
 
     /// `isFlipped` is false: AppKit's default bottom-left origin, matching screen coordinates.
-    override var isFlipped: Bool { false }
+    override var isFlipped: Bool {
+        false
+    }
 
     /// The first click on a non-key window starts the drag instead of just activating the window.
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
 
     /// The whole bounds are interactive; subviews would steal clicks.
-    override func hitTest(_ point: NSPoint) -> NSView? { self }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        self
+    }
 
     // MARK: - Drawing
 
@@ -116,10 +122,10 @@ final class ResizeOverlayView: NSView {
         }
 
         return [
-            centered(midX, maxY),   // top
-            centered(midX, minY),   // bottom
-            centered(minX, midY),   // left
-            centered(maxX, midY),   // right
+            centered(midX, maxY), // top
+            centered(midX, minY), // bottom
+            centered(minX, midY), // left
+            centered(maxX, midY), // right
         ]
     }
 
@@ -168,7 +174,10 @@ final class ResizeOverlayView: NSView {
         hitRegion = region(at: event.locationInWindow)
         startMouseLocation = NSEvent.mouseLocation
         startWindowFrame = windowFrame
-        if hitRegion == .interior { NSCursor.closedHand.push() }
+        if hitRegion == .interior {
+            NSCursor.closedHand.push()
+            closedHandCursorIsPushed = true
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -177,87 +186,121 @@ final class ResizeOverlayView: NSView {
         let dx = current.x - startMouseLocation.x
         let dy = current.y - startMouseLocation.y
 
-        // Always compute from the original start frame so a clamped result never accumulates.
-        var proposed = proposedFrame(from: startWindowFrame, delta: CGPoint(x: dx, y: dy))
-        proposed = clamp(proposed)
-        // If the clamp shrank an edge drag to the minimum size, keep the opposite edge where it was
-        // instead of letting the whole box slide.
-        switch hitRegion {
-        case .bottomEdge: proposed.origin.y = startWindowFrame.maxY - proposed.height
-        case .leftEdge: proposed.origin.x = startWindowFrame.maxX - proposed.width
-        case .topEdge, .rightEdge, .interior: break
-        }
-        proposed = clamp(proposed)
-
-        // Only report when the clamp actually let the frame change; otherwise the box would jitter.
-        if proposed != startWindowFrame || proposed != windowFrame {
+        let proposed = constrainedFrame(
+            from: startWindowFrame,
+            delta: CGPoint(x: dx, y: dy)
+        )
+        if proposed != windowFrame {
             onFrameChange?(proposed)
         }
     }
 
     override func mouseUp(with event: NSEvent) {
-        if hitRegion == .interior { NSCursor.pop() }
-        onDragEnd?()
+        releaseClosedHandCursor()
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        if newWindow == nil {
+            releaseClosedHandCursor()
+        }
+        super.viewWillMove(toWindow: newWindow)
     }
 
     /// Which grab region contains `locationInWindow` (converted to screen coordinates).
     private func region(at locationInWindow: NSPoint) -> HitRegion {
         // Convert window coordinates to this view's bounds.
         let local = convert(locationInWindow, from: nil)
-        let screen = screenPoint(fromLocal: local)
         let s = Self.handleSize
         let t = Self.hitTolerance
 
         // Edge midpoints only; corners are not handles and fall through to the interior.
-        let nearTop = screen.y >= bounds.maxY - t && screen.x > bounds.minX + s && screen.x < bounds.maxX - s
-        let nearBottom = screen.y <= bounds.minY + t && screen.x > bounds.minX + s && screen.x < bounds.maxX - s
-        let nearLeft = screen.x <= bounds.minX + t && screen.y > bounds.minY + s && screen.y < bounds.maxY - s
-        let nearRight = screen.x >= bounds.maxX - t && screen.y > bounds.minY + s && screen.y < bounds.maxY - s
+        let nearTop = local.y >= bounds.maxY - t && local.x > bounds.minX + s && local.x < bounds.maxX - s
+        let nearBottom = local.y <= bounds.minY + t && local.x > bounds.minX + s && local.x < bounds.maxX - s
+        let nearLeft = local.x <= bounds.minX + t && local.y > bounds.minY + s && local.y < bounds.maxY - s
+        let nearRight = local.x >= bounds.maxX - t && local.y > bounds.minY + s && local.y < bounds.maxY - s
 
-        if nearTop { return .topEdge }
-        if nearBottom { return .bottomEdge }
-        if nearLeft { return .leftEdge }
-        if nearRight { return .rightEdge }
+        if nearTop {
+            return .topEdge
+        }
+        if nearBottom {
+            return .bottomEdge
+        }
+        if nearLeft {
+            return .leftEdge
+        }
+        if nearRight {
+            return .rightEdge
+        }
 
         // Interior: anywhere not on an edge strip, including corners.
         return .interior
     }
 
-    /// Converts a point in this view's (flipped=false) bounds to screen coordinates.
-    private func screenPoint(fromLocal local: NSPoint) -> NSPoint {
-        // NSPoint in bounds: bottom-left origin already matches screen coordinates for a non-flipped view.
-        local
-    }
-
-    /// Build the proposed frame from the anchor frame plus a screen-space delta, touching only the sides the drag grabbed.
-    private func proposedFrame(from anchor: CGRect, delta: CGPoint) -> CGRect {
+    /// Builds a frame from the drag anchor while keeping the opposite edge fixed and the result
+    /// fully inside `allowedFrame`.
+    private func constrainedFrame(from anchor: CGRect, delta: CGPoint) -> CGRect {
         var frame = anchor
+        let minimumWidth = min(minimumSize.width, allowedFrame.width)
+        let minimumHeight = min(minimumSize.height, allowedFrame.height)
 
         switch hitRegion {
         case .interior:
-            // Move: shift the origin.
-            frame.origin.x += delta.x
-            frame.origin.y += delta.y
+            frame.origin.x = clamp(
+                anchor.origin.x + delta.x,
+                from: allowedFrame.minX,
+                through: allowedFrame.maxX - anchor.width
+            )
+            frame.origin.y = clamp(
+                anchor.origin.y + delta.y,
+                from: allowedFrame.minY,
+                through: allowedFrame.maxY - anchor.height
+            )
 
         case .topEdge:
-            // Top edge: height only. Top in screen space grows upward.
-            frame.size.height += delta.y
+            let top = clamp(
+                anchor.maxY + delta.y,
+                from: anchor.minY + minimumHeight,
+                through: allowedFrame.maxY
+            )
+            frame.size.height = top - anchor.minY
 
         case .bottomEdge:
-            // Bottom edge: origin.y and height change together.
-            frame.origin.y += delta.y
-            frame.size.height -= delta.y
+            let bottom = clamp(
+                anchor.minY + delta.y,
+                from: allowedFrame.minY,
+                through: anchor.maxY - minimumHeight
+            )
+            frame.origin.y = bottom
+            frame.size.height = anchor.maxY - bottom
 
         case .leftEdge:
-            // Left edge: origin.x and width change together.
-            frame.origin.x += delta.x
-            frame.size.width -= delta.x
+            let left = clamp(
+                anchor.minX + delta.x,
+                from: allowedFrame.minX,
+                through: anchor.maxX - minimumWidth
+            )
+            frame.origin.x = left
+            frame.size.width = anchor.maxX - left
 
         case .rightEdge:
-            // Right edge: width only.
-            frame.size.width += delta.x
+            let right = clamp(
+                anchor.maxX + delta.x,
+                from: anchor.minX + minimumWidth,
+                through: allowedFrame.maxX
+            )
+            frame.size.width = right - anchor.minX
         }
 
         return frame
+    }
+
+    private func clamp(_ value: CGFloat, from lowerBound: CGFloat, through upperBound: CGFloat) -> CGFloat {
+        min(max(value, lowerBound), upperBound)
+    }
+
+    private func releaseClosedHandCursor() {
+        guard closedHandCursorIsPushed else { return }
+        NSCursor.pop()
+        closedHandCursorIsPushed = false
     }
 }

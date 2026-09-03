@@ -8,7 +8,7 @@ import SwiftUI
 @Observable
 final class AppModel {
     /// Range of caption font sizes the user can pick, in points.
-    static let fontSizeRange: ClosedRange<Double> = 14...48
+    static let fontSizeRange: ClosedRange<Double> = 14 ... 48
 
     /// Sample sentence shown by both preview entry points.
     private static let sampleSentence = "Captions will look like this. Pick a size that reads comfortably."
@@ -25,13 +25,13 @@ final class AppModel {
 
     let store = CaptionStore()
     let settings = SettingsStore()
-    let layout = CaptionLayoutStore()
-    private(set) var overlay: OverlayController?
-    private(set) var resize: ResizeController?
+    private let layout = CaptionLayoutStore()
+    private var overlay: OverlayController?
+    private var resize: ResizeController?
 
     // MARK: - State
 
-    private(set) var session: CaptionSession?
+    private var session: CaptionSession?
     /// The in-flight `start()`, so `stop()` can wait for it instead of orphaning a half-started session.
     private var startTask: Task<Void, Never>?
     private(set) var status: EngineStatus = .idle
@@ -59,18 +59,28 @@ final class AppModel {
         return "\(n) \(total == 1 ? "word" : "words") transcribed all time"
     }
 
-    var isRunning: Bool { session?.isRunning ?? false }
+    var isRunning: Bool {
+        session?.isRunning ?? false
+    }
 
     /// Shown beside the title: Active while transcribing, Inactive otherwise.
-    var activityLabel: String { status == .running ? "Active" : "Inactive" }
+    var activityLabel: String {
+        status == .running ? "Active" : "Inactive"
+    }
 
     /// Secondary line under the title, only for states that need explaining. Nil when idle or running normally.
     var detailText: String? {
-        if let errorMessage { return errorMessage }
-        if noAudioDetected { return "No audio is being detected." }
+        if let errorMessage {
+            return errorMessage
+        }
+        if noAudioDetected {
+            return "No audio is being detected."
+        }
         switch status {
         case .preparingModel(let p):
-            if let p, p > 0 { return "Downloading model \(Int(p * 100))%" }
+            if let p, p > 0 {
+                return "Downloading model \(Int(p * 100))%"
+            }
             return "Preparing model…"
         case .ready: return "Starting…"
         case .idle, .running, .stopped: return nil
@@ -92,8 +102,6 @@ final class AppModel {
     func beginResize() {
         resize?.begin(previewText: Self.sampleSentence)
     }
-
-    var isResizing: Bool { resize?.isActive ?? false }
 
     func loadLocales() async {
         supportedLocales = await SpeechAnalyzerEngine.supportedLocales

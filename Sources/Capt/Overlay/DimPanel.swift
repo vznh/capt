@@ -10,10 +10,6 @@ final class DimPanel: NSPanel {
         didSet { contentView?.needsDisplay = true }
     }
 
-    /// Called on mouse-up anywhere on the dim layer (the caption box is a separate window
-    /// above it, so clicks there never reach this).
-    var onClick: (() -> Void)?
-
     init(screen: NSScreen) {
         super.init(
             contentRect: screen.frame,
@@ -39,27 +35,27 @@ final class DimPanel: NSPanel {
     func show() {
         alphaValue = 0
         orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup({ context in
+        NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             animator().alphaValue = 1
-        })
+        }
     }
 
     /// Animates alpha from 1 to 0 over 0.15 s, then runs `completion`.
     func hide(completion: (() -> Void)? = nil) {
-        NSAnimationContext.runAnimationGroup({ context in
+        NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             animator().alphaValue = 0
-        }, completionHandler: {
+        } completionHandler: {
             self.orderOut(nil)
             self.alphaValue = 1
             completion?()
-        })
+        }
     }
 
-    /// View that paints the dim layer with an even-odd cutout and forwards mouse-up to `onClick`.
+    /// View that paints the dim layer with an even-odd cutout. It deliberately absorbs clicks.
     private final class DimView: NSView {
         // Weak: the panel owns this view through contentView.
         private weak var panel: DimPanel?
@@ -69,11 +65,14 @@ final class DimPanel: NSPanel {
             super.init(frame: frame)
         }
 
+        @available(*, unavailable)
         required init?(coder: NSCoder) {
             fatalError("init(coder:) is not supported")
         }
 
-        override var acceptsFirstResponder: Bool { false }
+        override var acceptsFirstResponder: Bool {
+            false
+        }
 
         override func draw(_ dirtyRect: NSRect) {
             // Black at 50% over the whole bounds, minus the cutout: one path holding the
@@ -82,15 +81,11 @@ final class DimPanel: NSPanel {
             NSColor.black.withAlphaComponent(0.5).setFill()
             let path = NSBezierPath(rect: bounds)
             path.windingRule = .evenOdd
-            if let cutout = panel?.cutout {
-                // Convert the screen-coordinate cutout into this view's coordinate system.
-                path.append(NSBezierPath(rect: window!.convertFromScreen(cutout)))
+            if let cutout = panel?.cutout, let window {
+                let windowRect = window.convertFromScreen(cutout)
+                path.append(NSBezierPath(rect: convert(windowRect, from: nil)))
             }
             path.fill()
-        }
-
-        override func mouseUp(with event: NSEvent) {
-            panel?.onClick?()
         }
     }
 }

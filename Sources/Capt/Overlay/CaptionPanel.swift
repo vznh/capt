@@ -3,8 +3,8 @@ import CaptionCore
 import SwiftUI
 
 /// Transparent, click-through panel that floats above everything, including fullscreen video.
-/// One exists per display; `OverlayController` positions it from the layout store. During resize
-/// mode it becomes interactive and hosts a `ResizeOverlayView` on top of the captions.
+/// `OverlayController` keeps it on the primary display and positions it from the layout store.
+/// During resize mode it becomes interactive and hosts a `ResizeOverlayView` above the captions.
 final class CaptionPanel: NSPanel {
     private var resizeOverlay: NSView?
 

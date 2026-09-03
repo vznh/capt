@@ -14,7 +14,7 @@ final class OverlayController {
 
     init(store: CaptionStore, settings: SettingsStore, layout: CaptionLayoutStore) {
         self.layout = layout
-        self.panel = CaptionPanel(store: store, settings: settings)
+        panel = CaptionPanel(store: store, settings: settings)
     }
 
     /// Shows the panel on the main display and starts tracking display changes.
@@ -36,8 +36,8 @@ final class OverlayController {
         panel.setFrame(layout.frame(for: screen), display: true)
     }
 
-    /// Picks the main display and re-applies its frame. The main display is the one with the menu bar
-    /// unless a window of ours has focus, which never happens for non-activating panels.
+    /// Picks the main display. NSScreen.main follows the key window, which never exists for
+    /// this accessory app, so it always resolves to the primary display with the menu bar.
     private func syncScreen() {
         screen = NSScreen.main ?? NSScreen.screens.first
         applyLayout()

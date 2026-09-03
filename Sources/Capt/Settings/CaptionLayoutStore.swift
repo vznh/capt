@@ -24,7 +24,8 @@ final class CaptionLayoutStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if let data = defaults.data(forKey: Keys.frames),
-           let stored = try? JSONDecoder().decode([String: NormalizedRect].self, from: data) {
+           let stored = try? JSONDecoder().decode([String: NormalizedRect].self, from: data)
+        {
             frames = stored
         }
     }
@@ -63,12 +64,6 @@ final class CaptionLayoutStore {
         persist()
     }
 
-    func resetFrame(for screen: NSScreen) {
-        guard let id = screen.displayID else { return }
-        frames.removeValue(forKey: id.uuid)
-        persist()
-    }
-
     /// 70% of the screen width capped at 1200, 200 tall, bottom-centered 48 pt above the screen's
     /// bottom edge (this is the app's existing default).
     static func defaultFrame(for screen: NSScreen) -> CGRect {
@@ -91,10 +86,12 @@ final class CaptionLayoutStore {
         let minSize = minimumSize(for: screen)
         let visible = screen.visibleFrame
 
-        var width = max(rect.width, minSize.width)
-        var height = max(rect.height, minSize.height)
-        width = min(width, visible.width)
-        height = min(height, visible.height)
+        // Cap to the visible frame first; the minimum size must never win over the
+        // screen, or the result would be larger than the display it has to fit inside.
+        var width = min(rect.width, visible.width)
+        var height = min(rect.height, visible.height)
+        width = max(width, min(minSize.width, visible.width))
+        height = max(height, min(minSize.height, visible.height))
 
         var x = rect.origin.x
         var y = rect.origin.y

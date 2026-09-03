@@ -6,8 +6,7 @@ import CaptionCore
 /// restores the frame when the mode ends.
 @MainActor
 final class ResizeController {
-    private(set) var isActive = false
-    var onEnd: (() -> Void)?
+    private var isActive = false
 
     private let overlay: OverlayController
     private let store: CaptionStore
@@ -15,6 +14,7 @@ final class ResizeController {
     private var dim: DimPanel?
     private var hud: ResizeHUDPanel?
     private var handles: ResizeOverlayView?
+    private var keyMonitor: Any?
     private var originalFrame: CGRect = .zero
 
     init(overlay: OverlayController, store: CaptionStore) {
@@ -46,7 +46,8 @@ final class ResizeController {
 
         let view = ResizeOverlayView(frame: panel.contentView?.bounds ?? .zero)
         view.windowFrame = panel.frame
-        view.clamp = { CaptionLayoutStore.clamp($0, to: screen) }
+        view.allowedFrame = screen.visibleFrame
+        view.minimumSize = CaptionLayoutStore.minimumSize(for: screen)
         view.onFrameChange = { [weak self] rect in
             self?.apply(rect, on: screen)
         }
@@ -54,8 +55,21 @@ final class ResizeController {
         panel.showResizeOverlay(view)
         handles = view
 
-        // Key status lets Return and Escape reach the toolbar without activating the app.
-        hud.makeKeyAndOrderFront(nil)
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            switch event.keyCode {
+            case 36, 76: // Return and keypad Enter
+                Task { @MainActor in self?.commit() }
+                return nil
+            case 53: // Escape
+                Task { @MainActor in self?.cancel() }
+                return nil
+            default:
+                return event
+            }
+        }
+
+        // Avoid taking key status from the MenuBarExtra window so it stays open during resize.
+        hud.orderFrontRegardless()
     }
 
     /// Saves the current frame for this display and leaves resize mode.
@@ -87,6 +101,10 @@ final class ResizeController {
 
     private func end() {
         isActive = false
+        if let keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+            self.keyMonitor = nil
+        }
         overlay.panel.hideResizeOverlay()
         overlay.panel.setInteractive(false)
         hud?.close()
@@ -97,6 +115,5 @@ final class ResizeController {
         dim = nil
         handles = nil
         store.clearPreview()
-        onEnd?()
     }
 }
