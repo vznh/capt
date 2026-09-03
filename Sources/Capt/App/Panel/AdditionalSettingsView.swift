@@ -11,7 +11,7 @@ struct AdditionalSettingsView: View {
                     .font(.headline)
                 OpacityControl(title: "Fill", value: fillOpacity)
                 OpacityControl(title: "Text", value: textOpacity, range: 0.2 ... 1)
-                Toggle("Invert background behind fill", isOn: invertsBackground)
+                Toggle("Invert fill and text colors", isOn: invertsBackground)
                     .toggleStyle(.switch)
             }
 

@@ -22,7 +22,19 @@ struct CaptionView: View {
     }
 
     private var edgeOpacity: Double {
-        contrast == .increased ? 1.0 : 0.6
+        contrast == .increased ? 0.6 : 0.25
+    }
+
+    private var captionFill: Color {
+        settings.invertsCaptionBackground
+            ? settings.theme.text(for: colorScheme)
+            : settings.theme.fill(for: colorScheme)
+    }
+
+    private var captionForeground: Color {
+        settings.invertsCaptionBackground
+            ? settings.theme.fill(for: colorScheme)
+            : settings.theme.text(for: colorScheme)
     }
 
     private var lineSpacing: CGFloat {
@@ -65,9 +77,9 @@ struct CaptionView: View {
     private func caption(_ text: String) -> some View {
         captionText(text)
             .font(.system(size: settings.fontSize, weight: .medium))
-            .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
+            .foregroundStyle(captionForeground.opacity(textOpacity))
             // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
-            .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
+            .shadow(color: captionFill.opacity(edgeOpacity), radius: 0.6, x: 0, y: 0.5)
             .tracking(characterSpacing)
             .lineSpacing(lineSpacing)
             .multilineTextAlignment(.center)
@@ -76,7 +88,10 @@ struct CaptionView: View {
             .clipped()
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background { captionBackground }
+            .background(
+                captionFill.opacity(fillOpacity),
+                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+            )
             .accessibilityAddTraits(.updatesFrequently)
     }
 
@@ -86,18 +101,6 @@ struct CaptionView: View {
             Text(fixationEmphasized(text))
         } else {
             Text(text)
-        }
-    }
-
-    @ViewBuilder
-    private var captionBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-        if settings.invertsCaptionBackground {
-            shape
-                .fill(Color.white.opacity(fillOpacity))
-                .blendMode(.difference)
-        } else {
-            shape.fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
         }
     }
 
