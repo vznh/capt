@@ -12,6 +12,11 @@ final class AppModel {
 
     /// Sample sentence shown by both preview entry points.
     private static let sampleSentence = "Captions will look like this. Pick a size that reads comfortably."
+    /// Resize-specific context explaining what the visible box controls.
+    private static let resizePreviewText = """
+    Captions will look like this. Pick a size that reads comfortably. \
+    This box defines the maximum area captions can use.
+    """
 
     /// Scroll distance, in points, that changes the caption size by one point.
     private static let scrollPointsPerStep: CGFloat = 6
@@ -102,7 +107,7 @@ final class AppModel {
 
     /// Enters resize mode on every display with a sample caption showing.
     func beginResize() {
-        resize?.begin(previewText: Self.sampleSentence)
+        resize?.begin(previewText: Self.resizePreviewText)
     }
 
     func loadLocales() async {
