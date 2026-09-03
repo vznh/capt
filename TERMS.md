@@ -2,7 +2,7 @@
 
 **Version 1.0. Effective 2026-09-03.**
 
-These terms are an agreement between you and vznh ("we", "us") covering your use of the Capt macOS application ("Capt"). By installing or using Capt you agree to them. If you do not agree, do not use Capt.
+These terms are an agreement between you and 5f ("we", "us") covering your use of the Capt macOS application ("Capt"). By installing or using Capt you agree to them. If you do not agree, do not use Capt.
 
 Our [Privacy Policy](PRIVACY.md) explains how Capt handles data and is part of these terms.
 
@@ -74,7 +74,7 @@ If any part of these terms is found unenforceable, the rest remains in effect. O
 
 ## 15. Contact
 
-**[contact email]**
-Legal entity: **[legal name or entity]**, [jurisdiction].
+**5thf@proton.me**
+Legal entity: **5f**.
 
 Source code: https://github.com/vznh/capt

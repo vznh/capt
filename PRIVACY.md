@@ -2,7 +2,7 @@
 
 **Version 1.0. Effective 2026-09-03.**
 
-Capt is a macOS app made by vznh ("we", "us"). It listens to the audio your Mac is playing and shows live captions on your screen. This policy explains what Capt does with data, what it does not do, and how we will handle any future change to that.
+Capt is a macOS app made by 5f ("we", "us"). It listens to the audio your Mac is playing and shows live captions on your screen. This policy explains what Capt does with data, what it does not do, and how we will handle any future change to that.
 
 The short version: **today, nothing you play, say, or read leaves your Mac.** Capt has no servers, no accounts, and no analytics.
 
@@ -76,7 +76,7 @@ We will post any change here with a new version number and effective date. If a 
 
 ## 11. Contact
 
-Privacy questions, requests, or complaints: **[privacy contact email]**.
-Legal entity: **[legal name or entity]**, [jurisdiction].
+Privacy questions, requests, or complaints: **5thf@proton.me**.
+Legal entity: **5f**.
 
 Source code: https://github.com/vznh/capt
