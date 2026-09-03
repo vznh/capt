@@ -27,7 +27,7 @@ struct MenuPanelView: View {
                     Button(theme.displayName) { model.settings.theme = theme }
                 }
             }
-            MenuRow(title: "Text Size", value: "\(Int(model.settings.fontSize)) pt") {
+            MenuRow(title: "Text Size", value: "\(Int(model.settings.fontSize)) pt", symbol: "chevron.up.chevron.down") {
                 ForEach(Self.fontSizes, id: \.self) { size in
                     Button("\(Int(size)) pt") {
                         model.settings.fontSize = size
@@ -148,7 +148,7 @@ private struct RowLabel: View {
     let symbol: String?
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             Text(title)
                 .font(PanelFont.row)
                 .lineLimit(1)
@@ -192,13 +192,15 @@ private struct RowHighlight: ViewModifier {
 private struct MenuRow<Items: View>: View {
     let title: String
     let value: String?
+    /// Trailing symbol. Rows whose value can also be scrolled use the up/down pair.
+    var symbol: String = "chevron.right"
     @ViewBuilder let items: () -> Items
 
     var body: some View {
         Menu {
             items()
         } label: {
-            RowLabel(title: title, value: value, symbol: "chevron.right")
+            RowLabel(title: title, value: value, symbol: symbol)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
