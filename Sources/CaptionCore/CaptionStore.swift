@@ -48,10 +48,10 @@ public final class CaptionStore {
     public func apply(_ event: CaptionEvent, at date: Date = Date()) {
         switch event {
         case .partial(let text):
-            partial = text
+            partial = CaptionFilter.clean(text)
             lastUpdate = date
         case .final(let text):
-            committed = Self.tail(of: join(committed, text), sentences: maxSentences, characters: maxCharacters)
+            committed = Self.tail(of: join(committed, CaptionFilter.clean(text)), sentences: maxSentences, characters: maxCharacters)
             partial = ""
             lastUpdate = date
         case .status, .error:
