@@ -12,7 +12,9 @@ enum SentenceSplitter {
         var sentences: [String] = []
         tokenizer.enumerateTokens(in: trimmed.startIndex..<trimmed.endIndex) { range, _ in
             let sentence = trimmed[range].trimmingCharacters(in: .whitespacesAndNewlines)
-            if !sentence.isEmpty { sentences.append(sentence) }
+            if !sentence.isEmpty {
+                sentences.append(sentence)
+            }
             return true
         }
         return sentences.isEmpty ? [trimmed] : sentences

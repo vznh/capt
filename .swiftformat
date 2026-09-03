@@ -1,0 +1,16 @@
+--swiftversion 6.0
+--exclude .build,build
+
+# Preserve the established collection and pattern layout while enforcing the
+# formatter's remaining defaults consistently across the project.
+--binary-grouping none
+--decimal-grouping none
+--hex-grouping none
+--octal-grouping none
+--no-space-operators ..<
+--disable wrapMultilineStatementBraces
+--pattern-let inline
+--semicolons never
+--strip-unused-args closure-only
+--wrap-collections before-first
+--wrap-parameters after-first

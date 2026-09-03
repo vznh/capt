@@ -11,7 +11,9 @@ enum AudioLevel {
             let samples = channels[channel]
             for i in 0..<frames {
                 let v = abs(samples[i])
-                if v > peak { peak = v }
+                if v > peak {
+                    peak = v
+                }
             }
         }
         return peak

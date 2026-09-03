@@ -6,7 +6,9 @@ let kAppSubsystem = "app.capt"
 struct CaptApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
-    private var model: AppModel { delegate.model }
+    private var model: AppModel {
+        delegate.model
+    }
 
     var body: some Scene {
         MenuBarExtra("Capt", systemImage: model.isEnabled ? "captions.bubble.fill" : "captions.bubble") {

@@ -26,8 +26,13 @@ enum CaptionTheme: String, CaseIterable, Codable {
         }
     }
 
-    func fill(for scheme: ColorScheme) -> Color { resolved(for: scheme) == .dark ? .black : .white }
-    func text(for scheme: ColorScheme) -> Color { resolved(for: scheme) == .dark ? .white : .black }
+    func fill(for scheme: ColorScheme) -> Color {
+        resolved(for: scheme) == .dark ? .black : .white
+    }
+
+    func text(for scheme: ColorScheme) -> Color {
+        resolved(for: scheme) == .dark ? .white : .black
+    }
 }
 
 /// UserDefaults-backed preferences.
@@ -39,15 +44,19 @@ final class SettingsStore {
     var localeIdentifier: String {
         didSet { defaults.set(localeIdentifier, forKey: Keys.locale) }
     }
+
     var theme: CaptionTheme {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
     }
+
     var fontSize: Double {
         didSet { defaults.set(fontSize, forKey: Keys.fontSize) }
     }
+
     var engineKind: EngineKind {
         didSet { defaults.set(engineKind.rawValue, forKey: Keys.engine) }
     }
+
     /// Words transcribed across all sessions. Shown as an easter egg while holding Command.
     var totalWordCount: Int {
         didSet { defaults.set(totalWordCount, forKey: Keys.totalWords) }
@@ -58,7 +67,9 @@ final class SettingsStore {
     let textOpacity: Double = 0.8
     let maxLines = 2
 
-    var locale: Locale { Locale(identifier: localeIdentifier) }
+    var locale: Locale {
+        Locale(identifier: localeIdentifier)
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

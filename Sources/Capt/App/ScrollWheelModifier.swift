@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// Attaches a custom `NSCursor` and a scroll-wheel handler to any view while it is hovered,
 /// consuming the scroll events so the enclosing panel does not scroll. Used by the menu panel rows.

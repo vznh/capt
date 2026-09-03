@@ -12,9 +12,17 @@ struct CaptionView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     /// System accessibility settings override the 40% / 80% defaults.
-    private var fillOpacity: Double { reduceTransparency ? 0.9 : settings.fillOpacity }
-    private var textOpacity: Double { contrast == .increased ? 1.0 : settings.textOpacity }
-    private var edgeOpacity: Double { contrast == .increased ? 1.0 : 0.6 }
+    private var fillOpacity: Double {
+        reduceTransparency ? 0.9 : settings.fillOpacity
+    }
+
+    private var textOpacity: Double {
+        contrast == .increased ? 1.0 : settings.textOpacity
+    }
+
+    private var edgeOpacity: Double {
+        contrast == .increased ? 1.0 : 0.6
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -38,22 +46,22 @@ struct CaptionView: View {
     }
 
     private func caption(lineLimit: Int) -> some View {
-                Text(store.displayText)
-                    .font(.system(size: settings.fontSize, weight: .medium))
-                    .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
-                    // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
-                    .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
-                    .lineSpacing(settings.fontSize * 0.15)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(lineLimit)
-                    .truncationMode(.head)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        settings.theme.fill(for: colorScheme).opacity(fillOpacity),
-                        in: RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    )
-                    .accessibilityAddTraits(.updatesFrequently)
+        Text(store.displayText)
+            .font(.system(size: settings.fontSize, weight: .medium))
+            .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
+            // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
+            .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
+            .lineSpacing(settings.fontSize * 0.15)
+            .multilineTextAlignment(.center)
+            .lineLimit(lineLimit)
+            .truncationMode(.head)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                settings.theme.fill(for: colorScheme).opacity(fillOpacity),
+                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+            )
+            .accessibilityAddTraits(.updatesFrequently)
     }
 }

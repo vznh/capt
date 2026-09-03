@@ -74,7 +74,9 @@ struct MenuPanelView: View {
             }
         }
         .onDisappear {
-            if let flagsMonitor { NSEvent.removeMonitor(flagsMonitor) }
+            if let flagsMonitor {
+                NSEvent.removeMonitor(flagsMonitor)
+            }
             flagsMonitor = nil
             commandHeld = false
         }

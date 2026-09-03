@@ -4,14 +4,18 @@ import AudioToolbox
 import Foundation
 
 extension String: @retroactive LocalizedError {
-    public var errorDescription: String? { self }
+    public var errorDescription: String? {
+        self
+    }
 }
 
 extension AudioObjectID {
     static let system = AudioObjectID(kAudioObjectSystemObject)
     static let unknown = kAudioObjectUnknown
 
-    var isValid: Bool { self != .unknown }
+    var isValid: Bool {
+        self != .unknown
+    }
 
     static func readDefaultSystemOutputDevice() throws -> AudioDeviceID {
         try AudioObjectID.system.read(kAudioHardwarePropertyDefaultSystemOutputDevice, defaultValue: AudioDeviceID.unknown)

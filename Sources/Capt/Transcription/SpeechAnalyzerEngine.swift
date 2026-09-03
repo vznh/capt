@@ -18,11 +18,11 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
     private var inputBuilder: AsyncStream<AnalyzerInput>.Continuation?
     private var resultsTask: Task<Void, Never>?
 
-    // Touched only from the audio I/O thread.
+    /// Touched only from the audio I/O thread.
     private var converter: AudioFormatConverter?
 
     init(locale: Locale) {
-        self.requestedLocale = locale
+        requestedLocale = locale
         (events, continuation) = AsyncStream<CaptionEvent>.makeStream()
     }
 

@@ -16,7 +16,9 @@ final class AudioFormatConverter {
     }
 
     func convert(_ input: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
-        if input.format == outputFormat { return input }
+        if input.format == outputFormat {
+            return input
+        }
         let ratio = outputFormat.sampleRate / inputFormat.sampleRate
         let capacity = AVAudioFrameCount(Double(input.frameLength) * ratio) + 64
         guard let output = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else { return nil }

@@ -55,7 +55,7 @@ public final class CaptionSession {
         }
 
         let watchdog = SilenceWatchdog()
-        let engine = self.engine
+        let engine = engine
         do {
             try capture.start { [weak self] buffer in
                 if let peak = AudioLevel.peak(of: buffer) {
@@ -79,7 +79,7 @@ public final class CaptionSession {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self else { return }
-                self.store.expireIfIdle(timeout: self.idleTimeout)
+                store.expireIfIdle(timeout: idleTimeout)
             }
         }
 
@@ -139,10 +139,10 @@ public final class CaptionSession {
         partialCooldown = Task { [weak self] in
             try? await Task.sleep(for: .seconds(self?.partialInterval ?? 0.25))
             guard let self, !Task.isCancelled else { return }
-            self.partialCooldown = nil
-            if let pending = self.pendingPartial {
-                self.pendingPartial = nil
-                self.applyPartial(pending)
+            partialCooldown = nil
+            if let pending = pendingPartial {
+                pendingPartial = nil
+                applyPartial(pending)
             }
         }
     }

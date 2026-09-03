@@ -11,6 +11,8 @@ swift build               # compile without bundling
 Requires macOS 26 and Xcode 26. Always launch the bundled app with `open` or `Scripts/run.sh`,
 never the raw binary, so macOS attributes the audio permission to Capt rather than your terminal.
 
+Run `swiftformat Sources Package.swift --lint` before opening a pull request.
+
 The signing identity is chosen automatically: `build.sh` prefers a Developer ID Application or
 Apple Development certificate from the keychain, falling back to ad-hoc with a warning that
 privacy permissions may be re-requested after each rebuild. `CAPT_SIGN_IDENTITY` overrides the

@@ -45,7 +45,9 @@ public final class CaptionStore {
     }
 
     /// Sentences currently displayed, for tests and layout.
-    public var sentences: [String] { SentenceSplitter.split(displayText) }
+    public var sentences: [String] {
+        SentenceSplitter.split(displayText)
+    }
 
     // MARK: - Events
 
@@ -82,11 +84,16 @@ public final class CaptionStore {
     private var liveText: String {
         Self.tail(of: join(committed, partial), sentences: maxSentences, characters: maxCharacters)
     }
+
     private func join(_ a: String, _ b: String) -> String {
         let a = a.trimmingCharacters(in: .whitespacesAndNewlines)
         let b = b.trimmingCharacters(in: .whitespacesAndNewlines)
-        if a.isEmpty { return b }
-        if b.isEmpty { return a }
+        if a.isEmpty {
+            return b
+        }
+        if b.isEmpty {
+            return a
+        }
         return a + " " + b
     }
 

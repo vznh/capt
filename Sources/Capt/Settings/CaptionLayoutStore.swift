@@ -24,8 +24,7 @@ final class CaptionLayoutStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if let data = defaults.data(forKey: Keys.frames),
-           let stored = try? JSONDecoder().decode([String: NormalizedRect].self, from: data)
-        {
+           let stored = try? JSONDecoder().decode([String: NormalizedRect].self, from: data) {
             frames = stored
         }
     }
