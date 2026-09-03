@@ -141,24 +141,36 @@ struct CaptionView: View {
     }
 }
 
-/// Uses AppKit's backdrop-filter API so inversion samples pixels behind the transparent caption
-/// window. Unlike a SwiftUI difference blend, this view disappears cleanly with the caption.
+/// Uses AppKit's behind-window material as the backdrop source, then inverts that sampled image.
+/// A plain layer-backed view cannot sample pixels across the transparent caption window boundary.
 private struct InvertedCaptionBackground: NSViewRepresentable {
     let opacity: Double
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView(frame: .zero)
+        view.blendingMode = .behindWindow
+        view.material = .underWindowBackground
+        view.state = .active
         view.wantsLayer = true
         view.layer?.cornerRadius = 4
         view.layer?.cornerCurve = .continuous
         view.layer?.masksToBounds = true
-        if let inversion = CIFilter(name: "CIColorInvert") {
-            view.backgroundFilters = [inversion]
-        }
+        applyInversion(to: view)
         return view
     }
 
-    func updateNSView(_ view: NSView, context: Context) {
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        // NSVisualEffectView can rebuild its effect layers when attached to a window. Reasserting
+        // the public background filter here keeps inversion on the active backdrop surface.
+        applyInversion(to: view)
         view.alphaValue = opacity
+    }
+
+    private func applyInversion(to view: NSVisualEffectView) {
+        guard let inversion = CIFilter(name: "CIColorInvert") else {
+            view.backgroundFilters = []
+            return
+        }
+        view.backgroundFilters = [inversion]
     }
 }
