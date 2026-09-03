@@ -24,6 +24,22 @@ final class AppModel {
     /// BCP 47 tag of the chosen locale, matching the tags used by the language picker.
     var selectedLocaleTag: String { settings.locale.identifier(.bcp47) }
 
+    /// Shown beside the title: Active while transcribing, Inactive otherwise.
+    var activityLabel: String { status == .running ? "Active" : "Inactive" }
+
+    /// Secondary line under the title, only for states that need explaining. Nil when idle or running normally.
+    var detailText: String? {
+        if let errorMessage { return errorMessage }
+        if noAudioDetected { return "No audio is being detected." }
+        switch status {
+        case .preparingModel(let p):
+            if let p, p > 0 { return "Downloading model \(Int(p * 100))%" }
+            return "Preparing model…"
+        case .ready: return "Starting…"
+        case .idle, .running, .stopped: return nil
+        }
+    }
+
     var statusText: String {
         if let errorMessage { return errorMessage }
         if noAudioDetected { return "No audio is being detected." }

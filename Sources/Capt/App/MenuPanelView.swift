@@ -48,8 +48,13 @@ struct MenuPanelView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center) {
-                Text("Capt")
-                    .font(PanelFont.title)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("Capt")
+                        .font(PanelFont.title)
+                    Text(model.activityLabel)
+                        .font(PanelFont.titleDetail)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Toggle("Capt", isOn: Binding(
                     get: { model.isEnabled },
@@ -59,10 +64,12 @@ struct MenuPanelView: View {
                 .labelsHidden()
                 .controlSize(.large)
             }
-            Text(model.statusText)
-                .font(PanelFont.secondary)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            if let detail = model.detailText {
+                Text(detail)
+                    .font(PanelFont.secondary)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
         .padding(.horizontal, PanelMetrics.inset)
         .padding(.top, 8)
@@ -81,6 +88,7 @@ private enum PanelMetrics {
 
 private enum PanelFont {
     static let title = Font.system(size: 17, weight: .bold)
+    static let titleDetail = Font.system(size: 17, weight: .regular)
     static let sectionHeader = Font.system(size: 14, weight: .semibold)
     static let row = Font.system(size: 15, weight: .regular)
     static let secondary = Font.system(size: 13, weight: .regular)
