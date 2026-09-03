@@ -24,6 +24,17 @@ extension AudioObjectID {
         try read(kAudioTapPropertyFormat, defaultValue: AudioStreamBasicDescription())
     }
 
+    func write<T>(_ selector: AudioObjectPropertySelector, value: T) throws {
+        var address = AudioObjectPropertyAddress(
+            mSelector: selector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var value = value
+        let err = AudioObjectSetPropertyData(self, &address, 0, nil, UInt32(MemoryLayout<T>.size), &value)
+        guard err == noErr else { throw "Error writing \(selector): \(err)" }
+    }
+
     func read<T>(_ selector: AudioObjectPropertySelector, defaultValue: T) throws -> T {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,

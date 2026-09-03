@@ -14,6 +14,7 @@ final class SystemAudioTap: AudioCapturing {
     private var aggregateDeviceID: AudioObjectID = .unknown
     private var ioProcID: AudioDeviceIOProcID?
     private(set) var format: AVAudioFormat?
+    private static let preferredBufferFrames: UInt32 = 256
 
     func start(onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void) throws {
         guard ioProcID == nil else { return }
@@ -58,6 +59,13 @@ final class SystemAudioTap: AudioCapturing {
         guard err == noErr else {
             teardown()
             throw "Failed to create aggregate device: \(err)"
+        }
+
+        // Smaller I/O buffers mean audio reaches the analyzer sooner. ~5 ms at 48 kHz. Best effort.
+        do {
+            try aggregateDeviceID.write(kAudioDevicePropertyBufferFrameSize, value: Self.preferredBufferFrames)
+        } catch {
+            logger.warning("Could not set buffer frame size: \(error.localizedDescription, privacy: .public)")
         }
 
         err = AudioDeviceCreateIOProcIDWithBlock(&ioProcID, aggregateDeviceID, queue) { _, inputData, _, _, _ in
