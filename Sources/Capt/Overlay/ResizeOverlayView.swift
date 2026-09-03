@@ -16,7 +16,7 @@ final class ResizeOverlayView: NSView {
         case interior
     }
 
-    private enum Edge: CaseIterable {
+    private enum Edge: CaseIterable, Equatable {
         case top
         case bottom
         case left
@@ -106,6 +106,7 @@ final class ResizeOverlayView: NSView {
     /// `windowFrame` captured at mouse-down. Every drag step recomputes from this anchor, never from the previous step's result, so a clamped frame cannot make the box jitter.
     private var startWindowFrame: CGRect = .zero
     private var closedHandCursorIsPushed = false
+    private var pushedEdgeCursor: Edge?
     private var hoveredEdge: Edge?
     private var draggedEdge: Edge?
     private var indicatorViews: [Edge: EdgeIndicatorView] = [:]
@@ -246,8 +247,9 @@ final class ResizeOverlayView: NSView {
     override func mouseExited(with event: NSEvent) {
         setHoveredEdge(nil)
         if let draggedEdge {
-            draggedEdge.cursor.set()
+            pushCursor(for: draggedEdge)
         } else {
+            popEdgeCursor()
             NSCursor.arrow.set()
         }
     }
@@ -257,10 +259,24 @@ final class ResizeOverlayView: NSView {
         let edge = edge(at: local)
         setHoveredEdge(edge)
         if let activeEdge = draggedEdge ?? edge {
-            activeEdge.cursor.set()
+            pushCursor(for: activeEdge)
         } else {
+            popEdgeCursor()
             NSCursor.openHand.set()
         }
+    }
+
+    private func pushCursor(for edge: Edge) {
+        guard pushedEdgeCursor != edge else { return }
+        popEdgeCursor()
+        edge.cursor.push()
+        pushedEdgeCursor = edge
+    }
+
+    private func popEdgeCursor() {
+        guard pushedEdgeCursor != nil else { return }
+        NSCursor.pop()
+        pushedEdgeCursor = nil
     }
 
     private func setHoveredEdge(_ edge: Edge?) {
@@ -311,8 +327,9 @@ final class ResizeOverlayView: NSView {
         startWindowFrame = windowFrame
         updateIndicatorOpacities(animated: true)
         if let draggedEdge {
-            draggedEdge.cursor.set()
+            pushCursor(for: draggedEdge)
         } else {
+            popEdgeCursor()
             NSCursor.closedHand.push()
             closedHandCursorIsPushed = true
         }
@@ -344,6 +361,7 @@ final class ResizeOverlayView: NSView {
         if newWindow == nil {
             draggedEdge = nil
             updateIndicatorOpacities(animated: false)
+            popEdgeCursor()
             releaseClosedHandCursor()
         }
         super.viewWillMove(toWindow: newWindow)
