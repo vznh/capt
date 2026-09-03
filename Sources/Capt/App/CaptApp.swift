@@ -47,7 +47,7 @@ struct MenuContent: View {
                 } label: {
                     // Trailing mark: native menus only place state checkmarks in the left column.
                     if theme == model.settings.theme {
-                        Text(theme.displayName + "  ") + Text(Image(systemName: "checkmark"))
+                        Text(theme.displayName + "  \u{2713}")
                     } else {
                         Text(theme.displayName)
                     }
@@ -63,8 +63,9 @@ struct MenuContent: View {
         Button {
             PermissionCenter.openSystemAudioRecordingSettings()
         } label: {
-            // Trailing symbol signals this leaves the app for System Settings.
-            Text("Permissions ") + Text(Image(systemName: "arrow.up.forward.square"))
+            // Trailing glyph signals this leaves the app for System Settings. A text glyph, not an SF Symbol:
+            // image attachments in menu titles render black regardless of theme.
+            Text("Permissions \u{2197}")
         }
 
         Divider()
