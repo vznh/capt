@@ -59,7 +59,7 @@ final class SettingsStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         localeIdentifier = defaults.string(forKey: Keys.locale) ?? Locale.current.identifier
-        theme = CaptionTheme(rawValue: defaults.string(forKey: Keys.theme) ?? "") ?? .dark
+        theme = CaptionTheme(rawValue: defaults.string(forKey: Keys.theme) ?? "") ?? .system
         fontSize = defaults.object(forKey: Keys.fontSize) as? Double ?? 26
         engineKind = EngineKind(rawValue: defaults.string(forKey: Keys.engine) ?? "") ?? .speechAnalyzer
     }
