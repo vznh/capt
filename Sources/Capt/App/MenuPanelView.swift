@@ -46,6 +46,10 @@ struct MenuPanelView: View {
             ActionRow(title: "Permissions", symbol: "arrow.up.forward.square") {
                 PermissionCenter.openSystemAudioRecordingSettings()
             }
+            MenuRow(title: "Legal", value: nil) {
+                Button("Privacy Policy") { Legal.open(Legal.privacyPolicy) }
+                Button("Terms and Conditions") { Legal.open(Legal.termsAndConditions) }
+            }
             ActionRow(title: "Quit Capt", symbol: nil) {
                 NSApplication.shared.terminate(nil)
             }
