@@ -45,8 +45,12 @@ struct MenuContent: View {
                 Button {
                     model.settings.theme = theme
                 } label: {
-                    Text(theme.displayName)
-                    if theme == model.settings.theme { Image(systemName: "checkmark") }
+                    // Trailing mark: native menus only place state checkmarks in the left column.
+                    if theme == model.settings.theme {
+                        Text(theme.displayName + "  ") + Text(Image(systemName: "checkmark"))
+                    } else {
+                        Text(theme.displayName)
+                    }
                 }
             }
             Divider()
