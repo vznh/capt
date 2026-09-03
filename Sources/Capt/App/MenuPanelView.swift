@@ -65,7 +65,7 @@ struct MenuPanelView: View {
                 ))
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .controlSize(.large)
+                .controlSize(.regular)
             }
             if let detail = model.detailText {
                 Text(detail)
@@ -84,18 +84,18 @@ struct MenuPanelView: View {
 
 private enum PanelMetrics {
     static let inset: CGFloat = 14
-    static let rowHeight: CGFloat = 32
+    static let rowHeight: CGFloat = 28
     static let highlightInset: CGFloat = 6
     static let highlightRadius: CGFloat = 6
 }
 
 private enum PanelFont {
-    static let title = Font.system(size: 17, weight: .bold)
-    static let titleDetail = Font.system(size: 17, weight: .regular)
-    static let sectionHeader = Font.system(size: 12, weight: .semibold)
-    static let row = Font.system(size: 15, weight: .regular)
-    static let secondary = Font.system(size: 13, weight: .regular)
-    static let chevron = Font.system(size: 13, weight: .semibold)
+    static let title = Font.system(size: 15, weight: .bold)
+    static let titleDetail = Font.system(size: 15, weight: .regular)
+    static let sectionHeader = Font.system(size: 11, weight: .semibold)
+    static let row = Font.system(size: 13, weight: .regular)
+    static let secondary = Font.system(size: 12, weight: .regular)
+    static let chevron = Font.system(size: 12, weight: .semibold)
 }
 
 private struct SectionHeader: View {
