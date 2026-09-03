@@ -48,6 +48,10 @@ final class SettingsStore {
     var engineKind: EngineKind {
         didSet { defaults.set(engineKind.rawValue, forKey: Keys.engine) }
     }
+    /// Words transcribed across all sessions. Shown as an easter egg while holding Command.
+    var totalWordCount: Int {
+        didSet { defaults.set(totalWordCount, forKey: Keys.totalWords) }
+    }
 
     /// Opacities from the product spec: fill 40%, text 80%.
     let fillOpacity: Double = 0.4
@@ -62,6 +66,7 @@ final class SettingsStore {
         theme = CaptionTheme(rawValue: defaults.string(forKey: Keys.theme) ?? "") ?? .system
         fontSize = defaults.object(forKey: Keys.fontSize) as? Double ?? 26
         engineKind = EngineKind(rawValue: defaults.string(forKey: Keys.engine) ?? "") ?? .speechAnalyzer
+        totalWordCount = defaults.integer(forKey: Keys.totalWords)
     }
 
     private enum Keys {
@@ -69,5 +74,6 @@ final class SettingsStore {
         static let theme = "captions.theme"
         static let fontSize = "captions.fontSize"
         static let engine = "captions.engine"
+        static let totalWords = "captions.totalWords"
     }
 }

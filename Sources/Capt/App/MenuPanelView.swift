@@ -8,6 +8,10 @@ struct MenuPanelView: View {
 
     private static let fontSizes: [Double] = [18, 22, 26, 30, 36, 42]
 
+    /// Easter egg: holding Command while the panel is open shows word counts in the detail line.
+    @State private var commandHeld = false
+    @State private var flagsMonitor: Any?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -59,6 +63,18 @@ struct MenuPanelView: View {
         }
         .padding(.vertical, 6)
         .frame(width: 300)
+        .onAppear {
+            commandHeld = NSEvent.modifierFlags.contains(.command)
+            flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+                commandHeld = event.modifierFlags.contains(.command)
+                return event
+            }
+        }
+        .onDisappear {
+            if let flagsMonitor { NSEvent.removeMonitor(flagsMonitor) }
+            flagsMonitor = nil
+            commandHeld = false
+        }
     }
 
     private var header: some View {
@@ -82,7 +98,13 @@ struct MenuPanelView: View {
                 .scaleEffect(PanelMetrics.switchScale)
                 .frame(width: PanelMetrics.switchSize.width, height: PanelMetrics.switchSize.height)
             }
-            if let detail = model.detailText {
+            if commandHeld {
+                Text(model.wordCountText)
+                    .font(PanelFont.secondary)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            } else if let detail = model.detailText {
                 Text(detail)
                     .font(PanelFont.secondary)
                     .foregroundStyle(.secondary)

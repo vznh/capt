@@ -30,6 +30,22 @@ final class AppModel {
     /// What the user asked for. Flips immediately so the switch does not snap back while the engine starts.
     private(set) var isEnabled = false
 
+    /// Words transcribed since the current session started.
+    private(set) var sessionWordCount = 0
+
+    /// Easter egg shown while Command is held: this session's words when active, all-time words otherwise.
+    var wordCountText: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        if status == .running {
+            let n = formatter.string(from: NSNumber(value: sessionWordCount)) ?? "\(sessionWordCount)"
+            return "\(n) \(sessionWordCount == 1 ? "word" : "words") transcribed this session"
+        }
+        let total = settings.totalWordCount
+        let n = formatter.string(from: NSNumber(value: total)) ?? "\(total)"
+        return "\(n) \(total == 1 ? "word" : "words") transcribed all time"
+    }
+
     var isRunning: Bool { session?.isRunning ?? false }
 
     /// BCP 47 tag of the chosen locale, matching the tags used by the language picker.
@@ -90,6 +106,12 @@ final class AppModel {
         session.onStatus = { [weak self] in self?.status = $0 }
         session.onError = { [weak self] in self?.errorMessage = $0 }
         session.onSilenceChanged = { [weak self] in self?.noAudioDetected = $0 }
+        session.onFinalText = { [weak self] text in
+            let words = text.split(whereSeparator: \.isWhitespace).count
+            self?.sessionWordCount += words
+            self?.settings.totalWordCount += words
+        }
+        sessionWordCount = 0
         self.session = session
         do {
             try await session.start()

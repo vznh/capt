@@ -11,6 +11,8 @@ public final class CaptionSession {
     public var onError: ((String) -> Void)?
     /// True when the tap has delivered only silence for the watchdog threshold; false once audio returns.
     public var onSilenceChanged: ((Bool) -> Void)?
+    /// Each finalized text segment, for statistics.
+    public var onFinalText: ((String) -> Void)?
 
     /// Seconds without new text before the overlay clears.
     public var idleTimeout: TimeInterval = 5
@@ -98,11 +100,12 @@ public final class CaptionSession {
             onError?(message)
         case .partial(let text):
             applyPartial(text)
-        case .final:
+        case .final(let text):
             partialCooldown?.cancel()
             partialCooldown = nil
             pendingPartial = nil
             store.apply(event)
+            onFinalText?(text)
         }
     }
 
