@@ -53,7 +53,7 @@ Adding a backend: conform to `TranscriptionEngine`, add a case to `EngineKind`.
 ## Caption style
 
 Fill at 40% opacity, text at 80% opacity, at most two sentences, tail-anchored so the newest words stay
-visible. Dark (black on white text) and Light (inverse) themes in the Appearance menu.
+visible. System (follows macOS appearance), Dark (black fill, white text), and Light (inverse) themes in the Appearance menu.
 
 Readability rules: the box hugs its text, is centered, and grows outward from the middle and upward
 from the bottom edge; nothing animates, and partial results redraw at most every 250 ms. A one-point text edge keeps glyphs legible over bright video. System
