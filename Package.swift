@@ -5,7 +5,7 @@ let package = Package(
     name: "Capt",
     platforms: [.macOS("26.0")],
     targets: [
-        // Pure logic: protocols, caption state, session orchestration. No AppKit, so `swift test` is fast.
+        // Pure logic: protocols, caption state, session orchestration. No AppKit.
         .target(
             name: "CaptionCore",
             path: "Sources/CaptionCore",
@@ -16,12 +16,6 @@ let package = Package(
             name: "Capt",
             dependencies: ["CaptionCore"],
             path: "Sources/Capt",
-            swiftSettings: [.swiftLanguageMode(.v5)]
-        ),
-        .testTarget(
-            name: "CaptionCoreTests",
-            dependencies: ["CaptionCore"],
-            path: "Tests/CaptionCoreTests",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

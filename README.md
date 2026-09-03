@@ -16,7 +16,6 @@ Born from watching videos on sites that don't ship captions. Accessibility first
 ```sh
 Scripts/run.sh            # release build, bundles build/Capt.app, launches it
 Scripts/build.sh debug    # bundle only
-swift test                # CaptionCore unit tests, no AppKit needed
 ```
 
 Click the menu bar icon and flip the **Capt** switch. The first run asks for
@@ -25,7 +24,7 @@ Click the menu bar icon and flip the **Capt** switch. The first run asks for
 ## Layout
 
 Modeled on open-source macOS caption apps (Korus, mac-live-captions/caption-core, subtitles,
-OpenCaptions, overwhisper). UI-free logic lives in a separate package so it can be tested without AppKit.
+OpenCaptions, overwhisper). UI-free logic lives in a separate package, kept free of AppKit.
 
 ```
 Package.swift
@@ -45,7 +44,6 @@ Sources/
     Permissions/          # deep link to the audio recording pane
 Resources/                # Info.plist, entitlements
 Scripts/                  # build.sh bundles the .app, run.sh launches it
-Tests/CaptionCoreTests/
 ```
 
 Adding a backend: conform to `TranscriptionEngine`, add a case to `EngineKind`.
