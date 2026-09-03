@@ -1,11 +1,21 @@
 import CaptionCore
 import Foundation
 import Observation
+import SwiftUI
 
 /// Top-level state for the menu bar and overlay. Builds a fresh session per run.
 @MainActor
 @Observable
 final class AppModel {
+    /// Range of caption font sizes the user can pick, in points.
+    static let fontSizeRange: ClosedRange<Double> = 14...48
+
+    /// Sample sentence shown by both preview entry points.
+    private static let sampleSentence = "Captions will look like this. Pick a size that reads comfortably."
+
+    /// Leftover scroll delta between adjustments; every 6 points of magnitude moves the size by 1 pt.
+    private var scrollAccumulator: CGFloat = 0
+
     let store = CaptionStore()
     let settings = SettingsStore()
 
@@ -120,12 +130,41 @@ final class AppModel {
 
     /// Shows sample caption text in the overlay for a few seconds so the user can judge the font size.
     func previewCaptions() {
-        store.showPreview("Captions will look like this. Pick a size that reads comfortably.")
+        store.showPreview(Self.sampleSentence)
         previewTask?.cancel()
         previewTask = Task {
             try? await Task.sleep(for: .seconds(4))
             guard !Task.isCancelled else { return }
             store.clearPreview()
+        }
+    }
+
+    /// Shows the sample caption and keeps it up until `endPreview()`.
+    func beginPreview() {
+        previewTask?.cancel()
+        previewTask = nil
+        store.showPreview(Self.sampleSentence)
+    }
+
+    /// Hides the sample caption.
+    func endPreview() {
+        previewTask?.cancel()
+        previewTask = nil
+        store.clearPreview()
+    }
+
+    /// Adjusts the caption size from vertical scroll delta. Every 6 points of accumulated
+    /// magnitude changes the size by 1 pt; scrolling up (negative delta) grows the text.
+    func adjustFontSize(scrollDelta: CGFloat) {
+        scrollAccumulator += scrollDelta
+        let steps = Int(scrollAccumulator / 6)
+        guard steps != 0 else { return }
+        scrollAccumulator -= CGFloat(steps) * 6
+        let proposed = settings.fontSize - Double(steps)
+        let newSize = min(max(proposed, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
+        guard newSize != settings.fontSize else { return }
+        withAnimation(.snappy(duration: 0.18)) {
+            settings.fontSize = newSize
         }
     }
 }

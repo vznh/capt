@@ -35,6 +35,12 @@ struct MenuPanelView: View {
                     }
                 }
             }
+            .onScrollWheel(cursor: .resizeUpDown) { delta in
+                model.adjustFontSize(scrollDelta: delta)
+            }
+            .onHover { hovering in
+                hovering ? model.beginPreview() : model.endPreview()
+            }
             PanelDivider()
 
             ActionRow(title: "Permissions", symbol: "arrow.up.forward.square") {
@@ -139,17 +145,15 @@ private struct RowLabel: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(title)
-                .font(PanelFont.row)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            Spacer(minLength: 8)
             if let value {
                 Text(value)
                     .font(PanelFont.row)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .monospacedDigit()
             }
+            Spacer(minLength: 8)
             if let symbol {
                 Image(systemName: symbol)
                     .font(PanelFont.chevron)
