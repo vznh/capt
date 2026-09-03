@@ -56,7 +56,7 @@ final class AppModel {
         }
         let total = settings.totalWordCount
         let n = formatter.string(from: NSNumber(value: total)) ?? "\(total)"
-        return "\(n) \(total == 1 ? "word" : "words") transcribed all time"
+        return "\(n) \(total == 1 ? "word" : "words") transcribed totally"
     }
 
     var isRunning: Bool {
