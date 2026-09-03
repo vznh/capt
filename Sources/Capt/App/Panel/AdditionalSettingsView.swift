@@ -7,25 +7,36 @@ struct AdditionalSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Fill & Opacity")
+                Text("Adjustments")
                     .font(.headline)
                 OpacityControl(title: "Fill", value: fillOpacity)
                 OpacityControl(title: "Text", value: textOpacity, range: 0.2 ... 1)
-                Toggle("Invert fill and text colors", isOn: invertsBackground)
-                    .toggleStyle(.switch)
+                HStack {
+                    Text("Invert fill")
+                    Spacer()
+                    Toggle("Invert fill", isOn: invertsBackground)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 7) {
-                Text("Bionic")
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Accessibility")
                     .font(.headline)
-                Toggle("Fixation emphasis", isOn: bionicReading)
-                    .toggleStyle(.switch)
-                Text("Bolds the beginning of each word and adds spacing. Reading preferences vary by person.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bionic")
+                        Text("Bolds word beginnings with subtle spacing.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 8)
+                    Toggle("Bionic", isOn: bionicReading)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
             }
         }
         .padding(16)
