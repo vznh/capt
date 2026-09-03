@@ -43,6 +43,8 @@ final class CaptionPanel: NSPanel {
         view.frame = contentView.bounds
         view.autoresizingMask = [.width, .height]
         contentView.addSubview(view, positioned: .above, relativeTo: nil)
+        view.needsLayout = true
+        view.layoutSubtreeIfNeeded()
         resizeOverlay = view
     }
 

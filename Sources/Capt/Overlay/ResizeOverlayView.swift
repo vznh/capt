@@ -41,13 +41,13 @@ final class ResizeOverlayView: NSView {
 
     // MARK: - Constants
 
-    private static let indicatorLength: CGFloat = 44
+    private static let indicatorLength: CGFloat = 64
     private static let indicatorThickness: CGFloat = 3
     private static let indicatorInset: CGFloat = 5
     /// Invisible padding around each indicator keeps the short visual bars easy to acquire.
-    private static let hitPadding: CGFloat = 12
-    private static let idleIndicatorOpacity: Float = 0.42
-    private static let hoveredIndicatorOpacity: Float = 0.95
+    private static let hitPadding: CGFloat = 18
+    private static let idleIndicatorOpacity: Float = 0.58
+    private static let hoveredIndicatorOpacity: Float = 1
     private static let hoverDuration: TimeInterval = 0.14
     /// Width of the border stroked around the overlay bounds, in points.
     private static let borderWidth: CGFloat = 1
@@ -99,6 +99,12 @@ final class ResizeOverlayView: NSView {
         for edge in Edge.allCases {
             let indicator = CALayer()
             indicator.backgroundColor = NSColor.white.cgColor
+            indicator.borderColor = NSColor.black.withAlphaComponent(0.7).cgColor
+            indicator.borderWidth = 1
+            indicator.shadowColor = NSColor.black.cgColor
+            indicator.shadowOffset = .zero
+            indicator.shadowOpacity = 0.7
+            indicator.shadowRadius = 1
             indicator.opacity = Self.idleIndicatorOpacity
             layer?.addSublayer(indicator)
             indicatorLayers[edge] = indicator
@@ -169,13 +175,19 @@ final class ResizeOverlayView: NSView {
 
     // MARK: - Drawing
 
-    /// Strokes a dim border. Edge indicators are separate layers so opacity can animate smoothly.
+    /// Strokes a dual-contrast border. Edge indicators are separate layers so opacity can animate smoothly.
     override func draw(_ dirtyRect: NSRect) {
-        let borderRect = bounds.insetBy(dx: Self.borderWidth / 2, dy: Self.borderWidth / 2)
-        let border = NSBezierPath(rect: borderRect)
-        border.lineWidth = Self.borderWidth
-        NSColor.white.withAlphaComponent(0.35).setStroke()
-        border.stroke()
+        let outerRect = bounds.insetBy(dx: 1.5, dy: 1.5)
+        let outerBorder = NSBezierPath(rect: outerRect)
+        outerBorder.lineWidth = 3
+        NSColor.black.withAlphaComponent(0.28).setStroke()
+        outerBorder.stroke()
+
+        let innerRect = bounds.insetBy(dx: Self.borderWidth / 2, dy: Self.borderWidth / 2)
+        let innerBorder = NSBezierPath(rect: innerRect)
+        innerBorder.lineWidth = Self.borderWidth
+        NSColor.white.withAlphaComponent(0.72).setStroke()
+        innerBorder.stroke()
     }
 
     private func indicatorRect(for edge: Edge) -> NSRect {
