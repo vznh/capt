@@ -2,7 +2,7 @@ import AppKit
 import CoreFoundation
 
 /// Stable identity for a display, so caption frames persist per monitor across reboots and cable swaps.
-struct DisplayID: Hashable, Codable, Sendable { let uuid: String }
+struct DisplayID { let uuid: String }
 
 extension NSScreen {
     /// Hardware UUID via CGDisplayCreateUUIDFromDisplayID on the NSScreenNumber in deviceDescription.

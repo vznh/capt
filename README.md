@@ -2,16 +2,16 @@
 
 Live, on-device captions for anything your Mac is playing.
 
-Capt is a menu bar app that taps system audio, transcribes it with Apple's SpeechAnalyzer on macOS 26,
-and draws YouTube-style captions in a click-through overlay that floats above every window, including
-fullscreen video. Nothing leaves your Mac. Capt has no accounts, advertising, analytics, telemetry,
-crash reporting, or other tracking.
+Capt is a menu bar app that taps system audio, transcribes it with Apple's on-device SpeechAnalyzer,
+and draws YouTube-style captions in a click-through overlay above every window, including fullscreen
+video. Capt has no servers, accounts, advertising, analytics, telemetry, crash reporting, or other
+tracking. Audio and caption text stay in memory and are never saved or sent anywhere.
 
 Born from watching videos on sites that don't ship captions. Accessibility first.
 
 ## Requirements
 
-- macOS 26 or newer. SpeechAnalyzer is the on-device recognizer; the Core Audio process tap needs 14.2+.
+- macOS 26 or newer. SpeechAnalyzer is the on-device recognizer.
 - Xcode 26 to build.
 
 ## Build and run
@@ -21,19 +21,22 @@ Scripts/run.sh            # release build, bundles build/Capt.app, launches it
 Scripts/build.sh debug    # bundle only
 ```
 
-Click the menu bar icon and flip the **Capt** switch. The first run asks for **System Audio Recording**
-permission and downloads the speech model for your language.
+Click the menu bar icon and flip the **Capt** switch. On first use, macOS asks for **System Audio
+Recording** permission and downloads Apple's on-device speech model for the selected language if it
+is not already installed.
 
 ## Using it
 
-- **Language** picks the recognition locale. Capt cannot auto-detect the spoken language.
+- **Language** picks the recognition locale. Capt cannot auto-detect the spoken language. A cloud
+  download icon marks languages whose on-device model is not installed yet.
 - **Theme** is System, Dark, or Light. **Text Size** opens a size menu; hover it and scroll to adjust
   while a sample caption shows on screen.
 - **Resize** dims the screen and lets you drag the caption box by its edges to change its width and
   height, or drag its middle to move it. Done saves, Cancel restores, Reset returns the default. The
-  box is remembered per display.
-- **Additional…** opens fill and text opacity controls, optional backdrop inversion, and an
-  experimental Bionic-style fixation-emphasis mode.
+  box defines the maximum caption area and is remembered per display. Return confirms and Escape
+  cancels too.
+- **Additional…** opens **Adjustments** for fill and text opacity, plus **Accessibility** for an
+  experimental Bionic-style mode that bolds the beginning of each word.
 - Hold ⌘ with the panel open to see how many words Capt has transcribed.
 
 ## How it works
@@ -66,10 +69,11 @@ LICENSE NOTICE PRIVACY.md TERMS.md
 
 ## Caption style
 
-Fill at 40% opacity and text at 80% opacity. At most three caption lines stack upward as a queue: each
-new caption enters at the bottom and pushes the oldest one off the top. Long sentences wrap at word
-boundaries, with overflow rolling off the top instead of showing an ellipsis. The box hugs its text and
-is centered. Nothing animates, and partial results redraw at most every 250 ms. A one-point text edge
+Fill defaults to 40% opacity and text to 80%; both are adjustable. Capt keeps the three newest
+sentences in a first-in, first-out queue, draws hard sentence breaks on separate rows, and limits the
+visible block to three text rows. New text enters at the bottom and older overflow leaves from the top.
+Long sentences wrap at word boundaries instead of showing an ellipsis. The centered box hugs its text,
+caption changes do not animate, and partial results redraw at most every 250 ms. A subtle text edge
 keeps glyphs legible over bright video. Reduce Transparency raises the fill to 90%; Increase Contrast
 makes the text fully opaque.
 
@@ -77,10 +81,14 @@ makes the text fully opaque.
 
 - **Language is chosen, not detected.** SpeechAnalyzer needs a locale up front. Auto-detection needs a
   cloud engine behind the same protocol.
+- **The overlay uses the primary display.** Layouts are stored per display, but Capt currently shows
+  its caption panel only on the display macOS treats as primary.
 - **Signing identity is chosen automatically.** `build.sh` prefers a Developer ID Application or
   Apple Development certificate from the keychain, so the code signature (and the System Audio
   Recording grant keyed to it) survives rebuilds. `CAPT_SIGN_IDENTITY` overrides the choice;
   `-` forces ad-hoc, and the script warns that permissions may be re-requested after each rebuild.
+- **Local builds are not notarized.** The build script produces a hardened, signed app for local use;
+  distributing it through Gatekeeper requires a separate notarization workflow.
 - If captions never appear and the panel says no audio is being detected, grant System Audio Recording
   in System Settings › Privacy & Security.
 

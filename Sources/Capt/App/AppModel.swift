@@ -105,7 +105,7 @@ final class AppModel {
         resize = ResizeController(overlay: overlay, store: store)
     }
 
-    /// Enters resize mode on every display with a sample caption showing.
+    /// Enters resize mode on the overlay's display with a sample caption showing.
     func beginResize() {
         resize?.begin(previewText: Self.resizePreviewText)
     }

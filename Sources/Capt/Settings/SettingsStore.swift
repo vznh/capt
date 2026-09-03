@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import SwiftUI
 
-enum CaptionTheme: String, CaseIterable, Codable {
+enum CaptionTheme: String, CaseIterable {
     /// Follows the macOS appearance: dark captions in Dark Mode, light captions in Light Mode.
     case system
     /// Black fill, white text. YouTube default.

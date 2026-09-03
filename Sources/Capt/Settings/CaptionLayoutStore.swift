@@ -1,9 +1,8 @@
 import AppKit
 import Foundation
-import Observation
 
 /// A caption frame stored as fractions of the screen frame.
-struct NormalizedRect: Codable, Equatable {
+private struct NormalizedRect: Codable {
     var x: Double
     var y: Double
     var width: Double
@@ -13,7 +12,6 @@ struct NormalizedRect: Codable, Equatable {
 /// Where the caption region sits on each display. Frames are stored as fractions of the screen
 /// frame so resolution changes scale the box instead of pushing it off screen.
 @MainActor
-@Observable
 final class CaptionLayoutStore {
     /// In-memory source of truth, keyed by DisplayID.uuid. Loaded in init, written on every set/reset.
     private var frames: [String: NormalizedRect] = [:]
@@ -47,8 +45,8 @@ final class CaptionLayoutStore {
         )
     }
 
-    /// Stores the frame (normalized against screen.frame) and publishes the change. If the screen
-    /// has no DisplayID, keeps it in memory only for this run.
+    /// Stores the frame normalized against `screen.frame`. A screen without a display ID cannot be
+    /// persisted, so the update is ignored.
     func setFrame(_ rect: CGRect, for screen: NSScreen) {
         let bounds = screen.frame
         guard bounds.width > 0, bounds.height > 0 else { return }

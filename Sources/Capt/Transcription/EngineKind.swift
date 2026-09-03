@@ -3,14 +3,8 @@ import Foundation
 
 /// Which backend produces captions. Stored in settings; new engines get a case here
 /// plus a branch in `make(locale:)`.
-enum EngineKind: String, CaseIterable, Codable {
+enum EngineKind: String {
     case speechAnalyzer
-
-    var displayName: String {
-        switch self {
-        case .speechAnalyzer: "Apple on-device (SpeechAnalyzer)"
-        }
-    }
 
     func make(locale: Locale) -> TranscriptionEngine {
         switch self {

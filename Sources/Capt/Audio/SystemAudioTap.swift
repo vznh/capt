@@ -13,7 +13,6 @@ final class SystemAudioTap: AudioCapturing {
     private var tapID: AudioObjectID = .unknown
     private var aggregateDeviceID: AudioObjectID = .unknown
     private var ioProcID: AudioDeviceIOProcID?
-    private(set) var format: AVAudioFormat?
     private static let preferredBufferFrames: UInt32 = 256
 
     func start(onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void) throws {
@@ -35,7 +34,6 @@ final class SystemAudioTap: AudioCapturing {
         guard let tapFormat = AVAudioFormat(streamDescription: &streamDescription) else {
             throw CaptError("Unsupported tap stream format")
         }
-        format = tapFormat
         logger.info("Tap format: \(tapFormat, privacy: .public)")
 
         let outputID = try AudioObjectID.readDefaultSystemOutputDevice()
@@ -103,7 +101,6 @@ final class SystemAudioTap: AudioCapturing {
             check(AudioHardwareDestroyProcessTap(tapID), "destroy process tap")
             tapID = .unknown
         }
-        format = nil
     }
 
     private func check(_ status: OSStatus, _ what: String) {
