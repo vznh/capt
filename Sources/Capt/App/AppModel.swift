@@ -22,13 +22,13 @@ final class AppModel {
         if let errorMessage { return errorMessage }
         if noAudioDetected { return "No audio is being detected." }
         switch status {
-        case .idle: return "Not currently scribing"
+        case .idle: return "Capt is off"
         case .preparingModel(let p):
             if let p, p > 0 { return "Downloading model \(Int(p * 100))%" }
             return "Preparing model…"
         case .ready: return "Starting…"
         case .running: return "Listening (\(localeName(settings.locale)))"
-        case .stopped: return "Not currently scribing"
+        case .stopped: return "Capt is off"
         }
     }
 
