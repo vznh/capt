@@ -1,6 +1,5 @@
 import AppKit
 import CaptionCore
-import CoreImage
 import SwiftUI
 
 /// Caption block pinned to the bottom of the overlay. Up to three captions stack upward as a queue,
@@ -83,11 +82,13 @@ struct CaptionView: View {
 
     @ViewBuilder
     private var captionBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
         if settings.invertsCaptionBackground {
-            InvertedCaptionBackground(opacity: fillOpacity)
+            shape
+                .fill(Color.white.opacity(fillOpacity))
+                .blendMode(.difference)
         } else {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
+            shape.fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
         }
     }
 
@@ -138,39 +139,5 @@ struct CaptionView: View {
         remainder.font = .system(size: settings.fontSize, weight: .regular)
         result += emphasized
         result += remainder
-    }
-}
-
-/// Uses AppKit's behind-window material as the backdrop source, then inverts that sampled image.
-/// A plain layer-backed view cannot sample pixels across the transparent caption window boundary.
-private struct InvertedCaptionBackground: NSViewRepresentable {
-    let opacity: Double
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView(frame: .zero)
-        view.blendingMode = .behindWindow
-        view.material = .underWindowBackground
-        view.state = .active
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 4
-        view.layer?.cornerCurve = .continuous
-        view.layer?.masksToBounds = true
-        applyInversion(to: view)
-        return view
-    }
-
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {
-        // NSVisualEffectView can rebuild its effect layers when attached to a window. Reasserting
-        // the public background filter here keeps inversion on the active backdrop surface.
-        applyInversion(to: view)
-        view.alphaValue = opacity
-    }
-
-    private func applyInversion(to view: NSVisualEffectView) {
-        guard let inversion = CIFilter(name: "CIColorInvert") else {
-            view.backgroundFilters = []
-            return
-        }
-        view.backgroundFilters = [inversion]
     }
 }
