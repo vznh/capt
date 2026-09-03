@@ -71,44 +71,19 @@ private struct ResizeHUDView: View {
     let onDone: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
-            Button("Reset", role: .destructive, action: onReset)
-                .buttonStyle(ResizeActionButtonStyle(fill: Color(nsColor: .systemRed), foreground: .white))
+        HStack(spacing: 6) {
+            Button("Reset", action: onReset)
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
             Button("Cancel", action: onCancel)
-                .buttonStyle(
-                    ResizeActionButtonStyle(
-                        fill: Color(nsColor: .controlColor),
-                        foreground: Color(nsColor: .labelColor)
-                    )
-                )
+                .buttonStyle(.bordered)
                 .keyboardShortcut(.cancelAction)
             Button("Done", action: onDone)
-                .buttonStyle(ResizeActionButtonStyle(fill: Color(nsColor: .systemBlue), foreground: .white))
+                .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
         }
         .font(.system(size: 13))
         .padding(8)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-    }
-}
-
-/// Explicit colors stay legible in the HUD's intentionally nonactivating panel; AppKit's standard
-/// prominent style otherwise dims its accent fill when no application window is key.
-private struct ResizeActionButtonStyle: ButtonStyle {
-    let fill: Color
-    let foreground: Color
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .fontWeight(.semibold)
-            .foregroundStyle(foreground)
-            .frame(minWidth: 58)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                fill.opacity(configuration.isPressed ? 0.72 : 1),
-                in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 }
