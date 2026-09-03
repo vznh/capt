@@ -8,6 +8,8 @@ final class AudioFormatConverter {
 
     init?(from inputFormat: AVAudioFormat, to outputFormat: AVAudioFormat) {
         guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else { return nil }
+        // Priming holds back leading frames on every call; for a live stream that is pure delay.
+        converter.primeMethod = .none
         self.inputFormat = inputFormat
         self.outputFormat = outputFormat
         self.converter = converter
