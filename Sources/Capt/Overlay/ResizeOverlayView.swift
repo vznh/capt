@@ -39,6 +39,38 @@ final class ResizeOverlayView: NSView {
         }
     }
 
+    /// A real AppKit subview, rather than a layer attached before AppKit creates the parent's
+    /// backing layer. This guarantees the handle enters the rendered view hierarchy.
+    private final class EdgeIndicatorView: NSView {
+        override var isOpaque: Bool {
+            false
+        }
+
+        override func draw(_ dirtyRect: NSRect) {
+            let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+            let radius = min(bounds.width, bounds.height) / 2
+            let path = NSBezierPath(
+                roundedRect: rect,
+                xRadius: radius,
+                yRadius: radius
+            )
+
+            NSGraphicsContext.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.7)
+            shadow.shadowBlurRadius = 1
+            shadow.shadowOffset = .zero
+            shadow.set()
+            NSColor.white.setFill()
+            path.fill()
+            NSGraphicsContext.restoreGraphicsState()
+
+            path.lineWidth = 1
+            NSColor.black.withAlphaComponent(0.7).setStroke()
+            path.stroke()
+        }
+    }
+
     // MARK: - Constants
 
     private static let indicatorLength: CGFloat = 64
@@ -77,7 +109,7 @@ final class ResizeOverlayView: NSView {
     private var startWindowFrame: CGRect = .zero
     private var closedHandCursorIsPushed = false
     private var hoveredEdge: Edge?
-    private var indicatorLayers: [Edge: CALayer] = [:]
+    private var indicatorViews: [Edge: EdgeIndicatorView] = [:]
     private var edgeTrackingAreas: [NSTrackingArea] = []
     private var cursorTrackingArea: NSTrackingArea?
 
@@ -94,20 +126,11 @@ final class ResizeOverlayView: NSView {
     }
 
     private func commonInit() {
-        wantsLayer = true
-        layer?.backgroundColor = NSColor.clear.cgColor
         for edge in Edge.allCases {
-            let indicator = CALayer()
-            indicator.backgroundColor = NSColor.white.cgColor
-            indicator.borderColor = NSColor.black.withAlphaComponent(0.7).cgColor
-            indicator.borderWidth = 1
-            indicator.shadowColor = NSColor.black.cgColor
-            indicator.shadowOffset = .zero
-            indicator.shadowOpacity = 0.7
-            indicator.shadowRadius = 1
-            indicator.opacity = Self.idleIndicatorOpacity
-            layer?.addSublayer(indicator)
-            indicatorLayers[edge] = indicator
+            let indicator = EdgeIndicatorView(frame: .zero)
+            indicator.alphaValue = CGFloat(Self.idleIndicatorOpacity)
+            addSubview(indicator)
+            indicatorViews[edge] = indicator
         }
     }
 
@@ -128,14 +151,9 @@ final class ResizeOverlayView: NSView {
 
     override func layout() {
         super.layout()
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
         for edge in Edge.allCases {
-            let indicator = indicatorLayers[edge]
-            indicator?.frame = indicatorRect(for: edge)
-            indicator?.cornerRadius = Self.indicatorThickness / 2
+            indicatorViews[edge]?.frame = indicatorRect(for: edge)
         }
-        CATransaction.commit()
     }
 
     override func updateTrackingAreas() {
@@ -245,15 +263,16 @@ final class ResizeOverlayView: NSView {
     private func setHoveredEdge(_ edge: Edge?) {
         guard edge != hoveredEdge else { return }
         hoveredEdge = edge
-        CATransaction.begin()
-        CATransaction.setAnimationDuration(Self.hoverDuration)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
-        for (candidate, indicator) in indicatorLayers {
-            indicator.opacity = candidate == edge
-                ? Self.hoveredIndicatorOpacity
-                : Self.idleIndicatorOpacity
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Self.hoverDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            for (candidate, indicator) in indicatorViews {
+                let opacity = candidate == edge
+                    ? Self.hoveredIndicatorOpacity
+                    : Self.idleIndicatorOpacity
+                indicator.animator().alphaValue = CGFloat(opacity)
+            }
         }
-        CATransaction.commit()
     }
 
     // MARK: - Mouse handling
