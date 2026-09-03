@@ -87,11 +87,13 @@ final class ResizeOverlayView: NSView {
 
     // MARK: - Constants
 
-    private static let indicatorLength: CGFloat = 64
-    private static let indicatorThickness: CGFloat = 5
-    private static let indicatorInset: CGFloat = 5
-    /// Invisible padding around each indicator keeps the short visual bars easy to acquire.
-    private static let hitPadding: CGFloat = 18
+    private static let indicatorLength: CGFloat = 88
+    private static let indicatorThickness: CGFloat = 3
+    /// Keeps each thinner indicator centered at the same distance from its edge as before.
+    private static let indicatorInset: CGFloat = 6
+    /// Preserves the previous 100 × 41 point acquisition area independently of visual size.
+    private static let hitLength: CGFloat = 100
+    private static let hitThickness: CGFloat = 41
     private static let idleIndicatorOpacity: CGFloat = 0.62
     private static let dimmedIndicatorOpacity: CGFloat = 0.38
     private static let hoveredIndicatorOpacity: CGFloat = 0.92
@@ -128,7 +130,6 @@ final class ResizeOverlayView: NSView {
     private var draggedEdge: Edge?
     private var indicatorViews: [Edge: EdgeIndicatorView] = [:]
     private var edgeTrackingAreas: [NSTrackingArea] = []
-    private var cursorTrackingArea: NSTrackingArea?
 
     // MARK: - Setup
 
@@ -171,15 +172,13 @@ final class ResizeOverlayView: NSView {
         for edge in Edge.allCases {
             indicatorViews[edge]?.frame = indicatorRect(for: edge)
         }
+        window?.invalidateCursorRects(for: self)
     }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         for trackingArea in edgeTrackingAreas {
             removeTrackingArea(trackingArea)
-        }
-        if let cursorTrackingArea {
-            removeTrackingArea(cursorTrackingArea)
         }
 
         let edgeOptions: NSTrackingArea.Options = [
@@ -197,15 +196,14 @@ final class ResizeOverlayView: NSView {
             addTrackingArea(trackingArea)
             return trackingArea
         }
+    }
 
-        let cursorArea = NSTrackingArea(
-            rect: bounds,
-            options: [.cursorUpdate, .activeAlways],
-            owner: self,
-            userInfo: nil
-        )
-        addTrackingArea(cursorArea)
-        cursorTrackingArea = cursorArea
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(visibleRect, cursor: .openHand)
+        for edge in Edge.allCases {
+            addCursorRect(hitRect(for: edge).intersection(visibleRect), cursor: edge.cursor)
+        }
     }
 
     // MARK: - Drawing
@@ -246,28 +244,47 @@ final class ResizeOverlayView: NSView {
     }
 
     private func hitRect(for edge: Edge) -> NSRect {
-        indicatorRect(for: edge)
-            .insetBy(dx: -Self.hitPadding, dy: -Self.hitPadding)
-            .intersection(bounds)
+        let indicator = indicatorRect(for: edge)
+        let rect = switch edge {
+        case .top, .bottom:
+            NSRect(
+                x: indicator.midX - Self.hitLength / 2,
+                y: indicator.midY - Self.hitThickness / 2,
+                width: Self.hitLength,
+                height: Self.hitThickness
+            )
+        case .left, .right:
+            NSRect(
+                x: indicator.midX - Self.hitThickness / 2,
+                y: indicator.midY - Self.hitLength / 2,
+                width: Self.hitThickness,
+                height: Self.hitLength
+            )
+        }
+        return rect.intersection(bounds)
     }
 
     // MARK: - Hover and cursor feedback
 
     override func mouseEntered(with event: NSEvent) {
-        setHoveredEdge(edge(from: event))
+        guard let edge = edge(from: event) else { return }
+        edge.cursor.set()
+        setHoveredEdge(edge)
     }
 
     override func mouseExited(with event: NSEvent) {
         guard hoveredEdge == edge(from: event) else { return }
         setHoveredEdge(nil)
+        if let draggedEdge {
+            draggedEdge.cursor.set()
+        } else {
+            cursor(at: event.locationInWindow).set()
+        }
     }
 
-    override func cursorUpdate(with event: NSEvent) {
-        if let edge = edge(at: convert(event.locationInWindow, from: nil)) {
-            edge.cursor.set()
-        } else {
-            NSCursor.openHand.set()
-        }
+    private func cursor(at locationInWindow: NSPoint) -> NSCursor {
+        let local = convert(locationInWindow, from: nil)
+        return edge(at: local)?.cursor ?? .openHand
     }
 
     private func edge(from event: NSEvent) -> Edge? {
@@ -349,6 +366,7 @@ final class ResizeOverlayView: NSView {
         draggedEdge = nil
         updateIndicatorOpacities(animated: true)
         releaseClosedHandCursor()
+        cursor(at: event.locationInWindow).set()
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
