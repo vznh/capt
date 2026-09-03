@@ -149,6 +149,9 @@ private struct RowLabel: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            Text(title)
+                .font(PanelFont.row)
+                .lineLimit(1)
             if let value {
                 Text(value)
                     .font(PanelFont.row)
@@ -165,7 +168,7 @@ private struct RowLabel: View {
             }
         }
         .padding(.horizontal, PanelMetrics.inset)
-        .frame(height: PanelMetrics.rowHeight)
+        .frame(maxWidth: .infinity, minHeight: PanelMetrics.rowHeight, maxHeight: PanelMetrics.rowHeight)
         .contentShape(Rectangle())
     }
 }
