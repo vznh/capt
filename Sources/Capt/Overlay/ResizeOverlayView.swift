@@ -1,6 +1,8 @@
 import AppKit
 
-/// Transparent AppKit view laid over the caption panel during resize mode. Draws a border and four edge-midpoint handles, and turns mouse drags into a new window frame: edges resize, the interior moves. All math is done in screen coordinates using `NSEvent.mouseLocation` so it stays correct while the window itself moves under the cursor.
+/// Transparent AppKit view laid over the caption panel during resize mode. Draws a subtle border
+/// and four edge indicators, and turns mouse drags into a new window frame: edges resize, while the
+/// interior moves. Drag math uses screen coordinates so it remains stable as the window moves.
 @MainActor
 final class ResizeOverlayView: NSView {
     // MARK: - Types
@@ -14,24 +16,47 @@ final class ResizeOverlayView: NSView {
         case interior
     }
 
+    private enum Edge: String, CaseIterable {
+        case top
+        case bottom
+        case left
+        case right
+
+        var hitRegion: HitRegion {
+            switch self {
+            case .top: .topEdge
+            case .bottom: .bottomEdge
+            case .left: .leftEdge
+            case .right: .rightEdge
+            }
+        }
+
+        var cursor: NSCursor {
+            switch self {
+            case .top, .bottom: .resizeUpDown
+            case .left, .right: .resizeLeftRight
+            }
+        }
+    }
+
     // MARK: - Constants
 
-    /// Square side length of the drawn (and hit-tested) edge handles, in points.
-    private static let handleSize: CGFloat = 10
-    /// Extra distance beyond a handle's visual bounds that still counts as a hit, in points.
-    private static let hitTolerance: CGFloat = 8
+    private static let indicatorLength: CGFloat = 44
+    private static let indicatorThickness: CGFloat = 3
+    private static let indicatorInset: CGFloat = 5
+    /// Invisible padding around each indicator keeps the short visual bars easy to acquire.
+    private static let hitPadding: CGFloat = 12
+    private static let idleIndicatorOpacity: Float = 0.42
+    private static let hoveredIndicatorOpacity: Float = 0.95
+    private static let hoverDuration: TimeInterval = 0.14
     /// Width of the border stroked around the overlay bounds, in points.
-    private static let borderWidth: CGFloat = 1.5
+    private static let borderWidth: CGFloat = 1
+    private static let trackingEdgeKey = "edge"
 
     // MARK: - Configuration
 
     /// Current frame of the owning window in screen coordinates. The controller sets this before showing the view and after applying each change.
-    var windowFrame: CGRect = .zero {
-        didSet {
-            // The overlay's own geometry is unchanged; only the tracked window moved.
-            needsDisplay = true
-        }
-    }
+    var windowFrame: CGRect = .zero
 
     /// Screen region the caption window must remain inside.
     var allowedFrame: CGRect = .zero
@@ -51,6 +76,10 @@ final class ResizeOverlayView: NSView {
     /// `windowFrame` captured at mouse-down. Every drag step recomputes from this anchor, never from the previous step's result, so a clamped frame cannot make the box jitter.
     private var startWindowFrame: CGRect = .zero
     private var closedHandCursorIsPushed = false
+    private var hoveredEdge: Edge?
+    private var indicatorLayers: [Edge: CALayer] = [:]
+    private var edgeTrackingAreas: [NSTrackingArea] = []
+    private var cursorTrackingArea: NSTrackingArea?
 
     // MARK: - Setup
 
@@ -65,9 +94,15 @@ final class ResizeOverlayView: NSView {
     }
 
     private func commonInit() {
-        // Transparent by default; the border and handles are the only visible parts.
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
+        for edge in Edge.allCases {
+            let indicator = CALayer()
+            indicator.backgroundColor = NSColor.white.cgColor
+            indicator.opacity = Self.idleIndicatorOpacity
+            layer?.addSublayer(indicator)
+            indicatorLayers[edge] = indicator
+        }
     }
 
     /// `isFlipped` is false: AppKit's default bottom-left origin, matching screen coordinates.
@@ -85,86 +120,128 @@ final class ResizeOverlayView: NSView {
         self
     }
 
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for edge in Edge.allCases {
+            let indicator = indicatorLayers[edge]
+            indicator?.frame = indicatorRect(for: edge)
+            indicator?.cornerRadius = Self.indicatorThickness / 2
+        }
+        CATransaction.commit()
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for trackingArea in edgeTrackingAreas {
+            removeTrackingArea(trackingArea)
+        }
+        if let cursorTrackingArea {
+            removeTrackingArea(cursorTrackingArea)
+        }
+
+        let edgeOptions: NSTrackingArea.Options = [
+            .mouseEnteredAndExited,
+            .activeAlways,
+            .enabledDuringMouseDrag,
+        ]
+        edgeTrackingAreas = Edge.allCases.map { edge in
+            let trackingArea = NSTrackingArea(
+                rect: hitRect(for: edge),
+                options: edgeOptions,
+                owner: self,
+                userInfo: [Self.trackingEdgeKey: edge.rawValue]
+            )
+            addTrackingArea(trackingArea)
+            return trackingArea
+        }
+
+        let cursorArea = NSTrackingArea(
+            rect: bounds,
+            options: [.cursorUpdate, .activeAlways],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(cursorArea)
+        cursorTrackingArea = cursorArea
+    }
+
     // MARK: - Drawing
 
-    /// Strokes the border and the four edge-midpoint handles. There are no corner handles.
+    /// Strokes a dim border. Edge indicators are separate layers so opacity can animate smoothly.
     override func draw(_ dirtyRect: NSRect) {
-        // 1.5 pt white border around the bounds.
         let borderRect = bounds.insetBy(dx: Self.borderWidth / 2, dy: Self.borderWidth / 2)
         let border = NSBezierPath(rect: borderRect)
         border.lineWidth = Self.borderWidth
-        NSColor.white.setStroke()
+        NSColor.white.withAlphaComponent(0.35).setStroke()
         border.stroke()
-
-        // Four edge-midpoint handles: top, bottom, left, right. White with a 1 pt black outline.
-        for handleRect in handleRects(in: bounds) {
-            let path = NSBezierPath(rect: handleRect)
-            path.lineWidth = 1
-            NSColor.black.setStroke()
-            path.stroke()
-            NSColor.white.setFill()
-            path.fill()
-        }
     }
 
-    /// Handle rects centered on the bounds' edge midpoints. Corners are deliberately excluded.
-    private func handleRects(in rect: NSRect) -> [NSRect] {
-        let s = Self.handleSize
-        let midX = NSMidX(rect)
-        let midY = NSMidY(rect)
-        let minX = rect.minX
-        let maxX = rect.maxX
-        let minY = rect.minY
-        let maxY = rect.maxY
-
-        func centered(_ x: CGFloat, _ y: CGFloat) -> NSRect {
-            NSRect(x: x - s / 2, y: y - s / 2, width: s, height: s)
-        }
-
-        return [
-            centered(midX, maxY), // top
-            centered(midX, minY), // bottom
-            centered(minX, midY), // left
-            centered(maxX, midY), // right
-        ]
-    }
-
-    // MARK: - Cursor feedback
-
-    override func resetCursorRects() {
-        // Top/bottom handles: up-down; left/right handles: left-right; everywhere else (including corners): open hand.
-        addCursorRect(edgeCursorRect(.top), cursor: .resizeUpDown)
-        addCursorRect(edgeCursorRect(.bottom), cursor: .resizeUpDown)
-        addCursorRect(edgeCursorRect(.left), cursor: .resizeLeftRight)
-        addCursorRect(edgeCursorRect(.right), cursor: .resizeLeftRight)
-        addCursorRect(interiorCursorRect(), cursor: .openHand)
-    }
-
-    /// Hit-test tolerant strip along an edge: the edge midpoint handle plus `hitTolerance` on each side.
-    private func edgeCursorRect(_ edge: Edge) -> NSRect {
-        let t = Self.hitTolerance
+    private func indicatorRect(for edge: Edge) -> NSRect {
+        let length = Self.indicatorLength
+        let thickness = Self.indicatorThickness
+        let inset = Self.indicatorInset
         switch edge {
         case .top:
-            return NSRect(x: bounds.minX + Self.handleSize, y: bounds.maxY - t,
-                          width: bounds.width - Self.handleSize * 2, height: t * 2)
+            return NSRect(x: bounds.midX - length / 2, y: bounds.maxY - inset - thickness,
+                          width: length, height: thickness)
         case .bottom:
-            return NSRect(x: bounds.minX + Self.handleSize, y: bounds.minY - t,
-                          width: bounds.width - Self.handleSize * 2, height: t * 2)
+            return NSRect(x: bounds.midX - length / 2, y: bounds.minY + inset,
+                          width: length, height: thickness)
         case .left:
-            return NSRect(x: bounds.minX - t, y: bounds.minY + Self.handleSize,
-                          width: t * 2, height: bounds.height - Self.handleSize * 2)
+            return NSRect(x: bounds.minX + inset, y: bounds.midY - length / 2,
+                          width: thickness, height: length)
         case .right:
-            return NSRect(x: bounds.maxX - t, y: bounds.minY + Self.handleSize,
-                          width: t * 2, height: bounds.height - Self.handleSize * 2)
+            return NSRect(x: bounds.maxX - inset - thickness, y: bounds.midY - length / 2,
+                          width: thickness, height: length)
         }
     }
 
-    private enum Edge {
-        case top, bottom, left, right
+    private func hitRect(for edge: Edge) -> NSRect {
+        indicatorRect(for: edge)
+            .insetBy(dx: -Self.hitPadding, dy: -Self.hitPadding)
+            .intersection(bounds)
     }
 
-    private func interiorCursorRect() -> NSRect {
-        bounds.insetBy(dx: Self.handleSize, dy: Self.handleSize)
+    // MARK: - Hover and cursor feedback
+
+    override func mouseEntered(with event: NSEvent) {
+        setHoveredEdge(edge(from: event))
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        guard hoveredEdge == edge(from: event) else { return }
+        setHoveredEdge(nil)
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        if let edge = edge(at: convert(event.locationInWindow, from: nil)) {
+            edge.cursor.set()
+        } else {
+            NSCursor.openHand.set()
+        }
+    }
+
+    private func edge(from event: NSEvent) -> Edge? {
+        guard let rawValue = event.trackingArea?.userInfo?[Self.trackingEdgeKey] as? String else {
+            return nil
+        }
+        return Edge(rawValue: rawValue)
+    }
+
+    private func setHoveredEdge(_ edge: Edge?) {
+        guard edge != hoveredEdge else { return }
+        hoveredEdge = edge
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(Self.hoverDuration)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
+        for (candidate, indicator) in indicatorLayers {
+            indicator.opacity = candidate == edge
+                ? Self.hoveredIndicatorOpacity
+                : Self.idleIndicatorOpacity
+        }
+        CATransaction.commit()
     }
 
     // MARK: - Mouse handling
@@ -208,32 +285,12 @@ final class ResizeOverlayView: NSView {
 
     /// Which grab region contains `locationInWindow` (converted to screen coordinates).
     private func region(at locationInWindow: NSPoint) -> HitRegion {
-        // Convert window coordinates to this view's bounds.
         let local = convert(locationInWindow, from: nil)
-        let s = Self.handleSize
-        let t = Self.hitTolerance
+        return edge(at: local)?.hitRegion ?? .interior
+    }
 
-        // Edge midpoints only; corners are not handles and fall through to the interior.
-        let nearTop = local.y >= bounds.maxY - t && local.x > bounds.minX + s && local.x < bounds.maxX - s
-        let nearBottom = local.y <= bounds.minY + t && local.x > bounds.minX + s && local.x < bounds.maxX - s
-        let nearLeft = local.x <= bounds.minX + t && local.y > bounds.minY + s && local.y < bounds.maxY - s
-        let nearRight = local.x >= bounds.maxX - t && local.y > bounds.minY + s && local.y < bounds.maxY - s
-
-        if nearTop {
-            return .topEdge
-        }
-        if nearBottom {
-            return .bottomEdge
-        }
-        if nearLeft {
-            return .leftEdge
-        }
-        if nearRight {
-            return .rightEdge
-        }
-
-        // Interior: anywhere not on an edge strip, including corners.
-        return .interior
+    private func edge(at point: NSPoint) -> Edge? {
+        Edge.allCases.first { hitRect(for: $0).contains(point) }
     }
 
     /// Builds a frame from the drag anchor while keeping the opposite edge fixed and the result
