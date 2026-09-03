@@ -56,7 +56,9 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         analyzerFormat = format
         logger.info("Analyzer format: \(String(describing: format), privacy: .public)")
 
-        let analyzer = SpeechAnalyzer(modules: [transcriber])
+        // High priority for live captions; keep the model loaded across start/stop cycles.
+        let options = SpeechAnalyzer.Options(priority: .userInitiated, modelRetention: .processLifetime)
+        let analyzer = SpeechAnalyzer(modules: [transcriber], options: options)
         self.analyzer = analyzer
         try await analyzer.prepareToAnalyze(in: format)
         continuation.yield(.status(.ready))
