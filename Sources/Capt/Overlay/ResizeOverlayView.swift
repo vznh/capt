@@ -42,27 +42,58 @@ final class ResizeOverlayView: NSView {
     /// A real AppKit subview, rather than a layer attached before AppKit creates the parent's
     /// backing layer. This guarantees the handle enters the rendered view hierarchy.
     private final class EdgeIndicatorView: NSView {
+        private let activeFillLayer = CALayer()
+
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            commonInit()
+        }
+
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+            commonInit()
+        }
+
+        private func commonInit() {
+            wantsLayer = true
+            layer?.backgroundColor = NSColor(calibratedWhite: 0.25, alpha: 1).cgColor
+            layer?.shadowColor = NSColor.black.cgColor
+            layer?.shadowOpacity = 0.45
+            layer?.shadowRadius = 1
+            layer?.shadowOffset = .zero
+
+            activeFillLayer.backgroundColor = NSColor.black.cgColor
+            activeFillLayer.opacity = 0
+            layer?.addSublayer(activeFillLayer)
+        }
+
         override var isOpaque: Bool {
             false
         }
 
-        override func draw(_ dirtyRect: NSRect) {
+        override func layout() {
+            super.layout()
             let radius = min(bounds.width, bounds.height) / 2
-            let path = NSBezierPath(
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            layer?.cornerRadius = radius
+            layer?.shadowPath = CGPath(
                 roundedRect: bounds,
-                xRadius: radius,
-                yRadius: radius
+                cornerWidth: radius,
+                cornerHeight: radius,
+                transform: nil
             )
+            activeFillLayer.frame = bounds
+            activeFillLayer.cornerRadius = radius
+            CATransaction.commit()
+        }
 
-            NSGraphicsContext.saveGraphicsState()
-            let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
-            shadow.shadowBlurRadius = 1.5
-            shadow.shadowOffset = .zero
-            shadow.set()
-            NSColor.white.setFill()
-            path.fill()
-            NSGraphicsContext.restoreGraphicsState()
+        func setActive(_ active: Bool, animated: Bool, duration: TimeInterval) {
+            CATransaction.begin()
+            CATransaction.setAnimationDuration(animated ? duration : 0)
+            CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
+            activeFillLayer.opacity = active ? 1 : 0
+            CATransaction.commit()
         }
     }
 
@@ -282,10 +313,10 @@ final class ResizeOverlayView: NSView {
     private func setHoveredEdge(_ edge: Edge?) {
         guard edge != hoveredEdge else { return }
         hoveredEdge = edge
-        updateIndicatorOpacities(animated: true)
+        updateIndicatorAppearance(animated: true)
     }
 
-    private func updateIndicatorOpacities(animated: Bool) {
+    private func updateIndicatorAppearance(animated: Bool) {
         let changes = {
             for (edge, indicator) in self.indicatorViews {
                 let opacity: CGFloat = if edge == self.draggedEdge {
@@ -297,6 +328,8 @@ final class ResizeOverlayView: NSView {
                 } else {
                     Self.idleIndicatorOpacity
                 }
+                let isActive = edge == self.draggedEdge || edge == self.hoveredEdge
+                indicator.setActive(isActive, animated: animated, duration: Self.hoverDuration)
                 indicator.animator().alphaValue = opacity
             }
         }
@@ -325,7 +358,7 @@ final class ResizeOverlayView: NSView {
         hitRegion = draggedEdge?.hitRegion ?? .interior
         startMouseLocation = NSEvent.mouseLocation
         startWindowFrame = windowFrame
-        updateIndicatorOpacities(animated: true)
+        updateIndicatorAppearance(animated: true)
         if let draggedEdge {
             pushCursor(for: draggedEdge)
         } else {
@@ -352,7 +385,7 @@ final class ResizeOverlayView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         draggedEdge = nil
-        updateIndicatorOpacities(animated: true)
+        updateIndicatorAppearance(animated: true)
         releaseClosedHandCursor()
         updatePointerFeedback(at: event.locationInWindow)
     }
@@ -360,7 +393,7 @@ final class ResizeOverlayView: NSView {
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         if newWindow == nil {
             draggedEdge = nil
-            updateIndicatorOpacities(animated: false)
+            updateIndicatorAppearance(animated: false)
             popEdgeCursor()
             releaseClosedHandCursor()
         }
