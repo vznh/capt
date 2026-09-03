@@ -13,13 +13,20 @@ final class AppModel {
     /// Sample sentence shown by both preview entry points.
     private static let sampleSentence = "Captions will look like this. Pick a size that reads comfortably."
 
-    /// Leftover scroll delta between adjustments; every 6 points of magnitude moves the size by 1 pt.
+    /// Scroll distance, in points, that changes the caption size by one point.
+    private static let scrollPointsPerStep: CGFloat = 6
+    /// How long a menu-triggered preview stays on screen.
+    private static let previewHold: Duration = .seconds(4)
+
+    /// Leftover scroll delta between adjustments.
     private var scrollAccumulator: CGFloat = 0
 
     let store = CaptionStore()
     let settings = SettingsStore()
 
     private(set) var session: CaptionSession?
+    /// The in-flight `start()`, so `stop()` can wait for it instead of orphaning a half-started session.
+    private var startTask: Task<Void, Never>?
     private(set) var status: EngineStatus = .idle
     private(set) var errorMessage: String?
     private(set) var noAudioDetected = false
@@ -75,9 +82,10 @@ final class AppModel {
     }
 
     func start() async {
-        guard session == nil else { return }
+        guard session == nil, startTask == nil else { return }
         isEnabled = true
         errorMessage = nil
+        noAudioDetected = false
         let engine = settings.engineKind.make(locale: settings.locale)
         let session = CaptionSession(capture: SystemAudioTap(), engine: engine, store: store)
         session.onStatus = { [weak self] in self?.status = $0 }
@@ -90,18 +98,24 @@ final class AppModel {
         }
         sessionWordCount = 0
         self.session = session
-        do {
-            try await session.start()
-        } catch {
-            errorMessage = error.localizedDescription
-            await session.stop()
-            self.session = nil
-            status = .idle
-            isEnabled = false
+        let task = Task { [weak self] in
+            do {
+                try await session.start()
+            } catch {
+                self?.errorMessage = error.localizedDescription
+                self?.session = nil
+                self?.status = .idle
+                self?.isEnabled = false
+            }
         }
+        startTask = task
+        await task.value
+        startTask = nil
     }
 
     func stop() async {
+        // Let a start that is still preparing the model finish, then tear it down.
+        await startTask?.value
         await session?.stop()
         session = nil
         status = .idle
@@ -127,7 +141,7 @@ final class AppModel {
         store.showPreview(Self.sampleSentence)
         previewTask?.cancel()
         previewTask = Task {
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: Self.previewHold)
             guard !Task.isCancelled else { return }
             store.clearPreview()
         }
@@ -151,9 +165,9 @@ final class AppModel {
     /// magnitude changes the size by 1 pt; scrolling up (negative delta) grows the text.
     func adjustFontSize(scrollDelta: CGFloat) {
         scrollAccumulator += scrollDelta
-        let steps = Int(scrollAccumulator / 6)
+        let steps = Int(scrollAccumulator / Self.scrollPointsPerStep)
         guard steps != 0 else { return }
-        scrollAccumulator -= CGFloat(steps) * 6
+        scrollAccumulator -= CGFloat(steps) * Self.scrollPointsPerStep
         let proposed = settings.fontSize - Double(steps)
         let newSize = min(max(proposed, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
         guard newSize != settings.fontSize else { return }
