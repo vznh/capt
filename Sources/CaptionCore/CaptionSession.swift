@@ -12,12 +12,17 @@ public final class CaptionSession {
 
     /// Seconds without new text before the overlay clears.
     public var idleTimeout: TimeInterval = 5
+    /// Minimum spacing between partial-text redraws. Fast results rewrite words many times a second;
+    /// coalescing them keeps the caption readable. Finals always render immediately.
+    public var partialInterval: TimeInterval = 0.25
 
     private let capture: AudioCapturing
     private let engine: TranscriptionEngine
     private let store: CaptionStore
     private var eventTask: Task<Void, Never>?
     private var idleTask: Task<Void, Never>?
+    private var partialCooldown: Task<Void, Never>?
+    private var pendingPartial: String?
 
     public init(capture: AudioCapturing, engine: TranscriptionEngine, store: CaptionStore) {
         self.capture = capture
@@ -67,8 +72,11 @@ public final class CaptionSession {
         await engine.stop()
         eventTask?.cancel()
         idleTask?.cancel()
+        partialCooldown?.cancel()
         eventTask = nil
         idleTask = nil
+        partialCooldown = nil
+        pendingPartial = nil
         store.clear()
         isRunning = false
         status = .stopped
@@ -82,8 +90,31 @@ public final class CaptionSession {
             onStatus?(s)
         case .error(let message):
             onError?(message)
-        case .partial, .final:
+        case .partial(let text):
+            applyPartial(text)
+        case .final:
+            partialCooldown?.cancel()
+            partialCooldown = nil
+            pendingPartial = nil
             store.apply(event)
+        }
+    }
+
+    /// Leading-edge throttle: render now if idle, otherwise keep the newest text and flush when the cooldown ends.
+    private func applyPartial(_ text: String) {
+        guard partialCooldown == nil else {
+            pendingPartial = text
+            return
+        }
+        store.apply(.partial(text))
+        partialCooldown = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(self?.partialInterval ?? 0.25))
+            guard let self, !Task.isCancelled else { return }
+            self.partialCooldown = nil
+            if let pending = self.pendingPartial {
+                self.pendingPartial = nil
+                self.applyPartial(pending)
+            }
         }
     }
 }
