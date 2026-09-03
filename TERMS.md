@@ -1,6 +1,6 @@
 # Capt Terms and Conditions
 
-**Version 1.0. Effective 2026-09-03.**
+**Version 1.1. Effective 2026-09-03.**
 
 These terms are an agreement between you and 5f ("we", "us") covering your use of the Capt macOS application ("Capt"). By installing or using Capt you agree to them. If you do not agree, do not use Capt.
 
@@ -32,9 +32,9 @@ You agree to use Capt only in ways that are lawful and respectful of others. In 
 
 Capt requires the macOS System Audio Recording permission and operates only while you have switched it on. macOS shows a recording indicator while capture is active. You may revoke the permission at any time.
 
-## 5. Optional data programs
+## 5. Privacy and local data
 
-Capt collects no data today. If we ever offer an optional program that collects captions or usage data, it will be governed by the then-current Privacy Policy and will require your separate, explicit opt-in inside Capt. Joining is never a condition of using Capt. If you join, you confirm that any audio you share is yours to share and that you have any consent needed from other people in it.
+Capt does not track users or send us audio, captions, preferences, device identifiers, or usage information. It has no accounts, advertising, analytics, telemetry, or crash reporting. Capt stores only local preferences on your Mac, including an aggregate word-count total and per-display caption layouts. The [Privacy Policy](PRIVACY.md) describes these practices in full.
 
 ## 6. Ownership
 

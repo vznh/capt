@@ -4,7 +4,8 @@ Live, on-device captions for anything your Mac is playing.
 
 Capt is a menu bar app that taps system audio, transcribes it with Apple's SpeechAnalyzer on macOS 26,
 and draws YouTube-style captions in a click-through overlay that floats above every window, including
-fullscreen video. Nothing leaves your Mac.
+fullscreen video. Nothing leaves your Mac. Capt has no accounts, advertising, analytics, telemetry,
+crash reporting, or other tracking.
 
 Born from watching videos on sites that don't ship captions. Accessibility first.
 
