@@ -55,9 +55,8 @@ Adding a backend: conform to `TranscriptionEngine`, add a case to `EngineKind`.
 Fill at 40% opacity, text at 80% opacity, at most two sentences, tail-anchored so the newest words stay
 visible. Dark (black on white text) and Light (inverse) themes in the Appearance menu.
 
-Readability rules, borrowed from broadcast roll-up captions: the box has a fixed width and a reserved
-two-line height, text is left-aligned so words appear in place, nothing animates, and partial results
-redraw at most every 250 ms. A one-point text edge keeps glyphs legible over bright video. System
+Readability rules: the box hugs its text, is centered, and grows outward from the middle and upward
+from the bottom edge; nothing animates, and partial results redraw at most every 250 ms. A one-point text edge keeps glyphs legible over bright video. System
 accessibility settings are honored: Reduce Transparency raises the fill to 90%, Increase Contrast makes
 the text fully opaque.
 

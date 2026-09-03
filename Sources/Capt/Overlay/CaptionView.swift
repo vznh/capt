@@ -1,8 +1,8 @@
 import CaptionCore
 import SwiftUI
 
-/// Roll-up caption block pinned to the bottom of the overlay. Fixed width and a reserved two-line
-/// height so text appears in place instead of the box growing and re-centering as words arrive.
+/// Caption block pinned to the bottom of the overlay. The box hugs its text and is centered, so it
+/// grows outward from the middle and upward from the bottom edge as words arrive. No animation.
 struct CaptionView: View {
     let store: CaptionStore
     let settings: SettingsStore
@@ -25,10 +25,10 @@ struct CaptionView: View {
                     // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
                     .shadow(color: settings.theme.fill.opacity(edgeOpacity), radius: 1, x: 0, y: 1)
                     .lineSpacing(settings.fontSize * 0.15)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(settings.maxLines, reservesSpace: true)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(settings.maxLines)
                     .truncationMode(.head)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
                     .background(
