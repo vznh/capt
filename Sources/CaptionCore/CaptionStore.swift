@@ -1,28 +1,33 @@
 import Foundation
 import Observation
 
-/// Holds the text currently shown on screen. Pure state, no UI.
+/// Holds the text currently shown on screen, capped to the last `maxSentences` sentences.
+/// Pure state, no UI.
 @MainActor
 @Observable
 public final class CaptionStore {
-    /// Finalized segments, oldest first. Trimmed to `maxSegments`.
-    public private(set) var segments: [String] = []
-    /// The latest volatile text, appended after `segments` when rendering.
+    /// Finalized text, already reduced to the trailing sentences.
+    public private(set) var committed: String = ""
+    /// The latest volatile text, appended after `committed` when rendering.
     public private(set) var partial: String = ""
     public private(set) var lastUpdate: Date?
 
-    public let maxSegments: Int
+    public let maxSentences: Int
+    /// Safety cap for speech with no sentence boundaries.
+    public let maxCharacters: Int
 
-    public init(maxSegments: Int = 2) {
-        self.maxSegments = maxSegments
+    public init(maxSentences: Int = 2, maxCharacters: Int = 240) {
+        self.maxSentences = maxSentences
+        self.maxCharacters = maxCharacters
     }
 
-    /// Text to render: finalized segments followed by the in-progress partial.
+    /// Text to render: the last `maxSentences` sentences of committed text plus the live partial.
     public var displayText: String {
-        var parts = segments
-        if !partial.isEmpty { parts.append(partial) }
-        return parts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        Self.tail(of: join(committed, partial), sentences: maxSentences, characters: maxCharacters)
     }
+
+    /// Sentences currently displayed, for tests and layout.
+    public var sentences: [String] { SentenceSplitter.split(displayText) }
 
     public func apply(_ event: CaptionEvent, at date: Date = Date()) {
         switch event {
@@ -30,13 +35,7 @@ public final class CaptionStore {
             partial = text
             lastUpdate = date
         case .final(let text):
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                segments.append(trimmed)
-                if segments.count > maxSegments {
-                    segments.removeFirst(segments.count - maxSegments)
-                }
-            }
+            committed = Self.tail(of: join(committed, text), sentences: maxSentences, characters: maxCharacters)
             partial = ""
             lastUpdate = date
         case .status, .error:
@@ -54,8 +53,24 @@ public final class CaptionStore {
     }
 
     public func clear() {
-        segments = []
+        committed = ""
         partial = ""
         lastUpdate = nil
+    }
+
+    private func join(_ a: String, _ b: String) -> String {
+        let a = a.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = b.trimmingCharacters(in: .whitespacesAndNewlines)
+        if a.isEmpty { return b }
+        if b.isEmpty { return a }
+        return a + " " + b
+    }
+
+    private static func tail(of text: String, sentences: Int, characters: Int) -> String {
+        var result = SentenceSplitter.split(text).suffix(sentences).joined(separator: " ")
+        if result.count > characters {
+            result = String(result.suffix(characters))
+        }
+        return result
     }
 }

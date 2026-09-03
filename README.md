@@ -32,7 +32,8 @@ Package.swift
 Sources/
   CaptionCore/            # library, no AppKit
     Protocols.swift       # TranscriptionEngine, AudioCapturing, CaptionEvent
-    CaptionStore.swift    # text currently on screen
+    CaptionStore.swift    # text on screen, capped to the last two sentences
+    SentenceSplitter.swift # language-agnostic sentence boundaries (NaturalLanguage)
     CaptionSession.swift  # capture -> engine -> store lifecycle
     SilenceWatchdog.swift # detects a permission-less tap (silent, no error)
   Capt/                   # the app
@@ -51,7 +52,7 @@ Adding a backend: conform to `TranscriptionEngine`, add a case to `EngineKind`.
 
 ## Caption style
 
-Fill at 40% opacity, text at 80% opacity, last two lines, tail-anchored so the newest words stay
+Fill at 40% opacity, text at 80% opacity, at most two sentences, tail-anchored so the newest words stay
 visible. Dark (black on white text) and Light (inverse) themes in the Appearance menu.
 
 ## Known limitations
