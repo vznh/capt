@@ -6,7 +6,9 @@ import CaptionCore
 /// this type just deep-links to the right Settings pane.
 enum PermissionCenter {
     static func openSystemAudioRecordingSettings() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture") else {
+            return
+        }
         NSWorkspace.shared.open(url)
     }
 }

@@ -28,12 +28,12 @@ final class SystemAudioTap: AudioCapturing {
 
         var newTapID: AudioObjectID = .unknown
         var err = AudioHardwareCreateProcessTap(description, &newTapID)
-        guard err == noErr else { throw "Failed to create process tap: \(err)" }
+        guard err == noErr else { throw CaptError("Failed to create process tap: \(err)") }
         tapID = newTapID
 
         var streamDescription = try tapID.readAudioTapStreamBasicDescription()
         guard let tapFormat = AVAudioFormat(streamDescription: &streamDescription) else {
-            throw "Unsupported tap stream format"
+            throw CaptError("Unsupported tap stream format")
         }
         format = tapFormat
         logger.info("Tap format: \(tapFormat, privacy: .public)")
@@ -58,7 +58,7 @@ final class SystemAudioTap: AudioCapturing {
         err = AudioHardwareCreateAggregateDevice(aggregate as CFDictionary, &aggregateDeviceID)
         guard err == noErr else {
             teardown()
-            throw "Failed to create aggregate device: \(err)"
+            throw CaptError("Failed to create aggregate device: \(err)")
         }
 
         // Smaller I/O buffers mean audio reaches the analyzer sooner. ~5 ms at 48 kHz. Best effort.
@@ -74,13 +74,13 @@ final class SystemAudioTap: AudioCapturing {
         }
         guard err == noErr else {
             teardown()
-            throw "Failed to create IO proc: \(err)"
+            throw CaptError("Failed to create IO proc: \(err)")
         }
 
         err = AudioDeviceStart(aggregateDeviceID, ioProcID)
         guard err == noErr else {
             teardown()
-            throw "Failed to start aggregate device: \(err)"
+            throw CaptError("Failed to start aggregate device: \(err)")
         }
         logger.info("Tap running")
     }

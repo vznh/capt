@@ -3,12 +3,6 @@
 import AudioToolbox
 import Foundation
 
-extension String: @retroactive LocalizedError {
-    public var errorDescription: String? {
-        self
-    }
-}
-
 extension AudioObjectID {
     static let system = AudioObjectID(kAudioObjectSystemObject)
     static let unknown = kAudioObjectUnknown
@@ -39,7 +33,7 @@ extension AudioObjectID {
         let err = withUnsafePointer(to: &value) { ptr in
             AudioObjectSetPropertyData(self, &address, 0, nil, UInt32(MemoryLayout<T>.size), ptr)
         }
-        guard err == noErr else { throw "Error writing \(selector): \(err)" }
+        guard err == noErr else { throw CaptError("Error writing \(selector): \(err)") }
     }
 
     func read<T>(_ selector: AudioObjectPropertySelector, defaultValue: T) throws -> T {
@@ -50,13 +44,13 @@ extension AudioObjectID {
         )
         var dataSize: UInt32 = 0
         var err = AudioObjectGetPropertyDataSize(self, &address, 0, nil, &dataSize)
-        guard err == noErr else { throw "Error reading data size for \(selector): \(err)" }
+        guard err == noErr else { throw CaptError("Error reading data size for \(selector): \(err)") }
 
         var value: T = defaultValue
         err = withUnsafeMutablePointer(to: &value) { ptr in
             AudioObjectGetPropertyData(self, &address, 0, nil, &dataSize, ptr)
         }
-        guard err == noErr else { throw "Error reading data for \(selector): \(err)" }
+        guard err == noErr else { throw CaptError("Error reading data for \(selector): \(err)") }
         return value
     }
 }

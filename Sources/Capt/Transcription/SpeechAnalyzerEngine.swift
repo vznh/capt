@@ -32,10 +32,10 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
 
     func prepare() async throws {
         guard SpeechTranscriber.isAvailable else {
-            throw "SpeechAnalyzer is not available on this Mac."
+            throw CaptError("SpeechAnalyzer is not available on this Mac.")
         }
         guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: requestedLocale) else {
-            throw "Language \(requestedLocale.identifier) is not supported by SpeechAnalyzer."
+            throw CaptError("Language \(requestedLocale.identifier) is not supported by SpeechAnalyzer.")
         }
 
         let transcriber = SpeechTranscriber(
@@ -61,7 +61,7 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
     }
 
     func start() async throws {
-        guard let analyzer, let transcriber else { throw "Engine not prepared" }
+        guard let analyzer, let transcriber else { throw CaptError("Engine not prepared") }
 
         let (inputSequence, builder) = AsyncStream<AnalyzerInput>.makeStream()
         inputBuilder = builder
@@ -108,7 +108,7 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
     private func ensureAssets(for transcriber: SpeechTranscriber, locale: Locale) async throws {
         let status = await AssetInventory.status(forModules: [transcriber])
         guard status != .installed else { return }
-        guard status != .unsupported else { throw "No speech model for \(locale.identifier)." }
+        guard status != .unsupported else { throw CaptError("No speech model for \(locale.identifier).") }
 
         _ = try? await AssetInventory.reserve(locale: locale)
         guard let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) else { return }
