@@ -66,6 +66,8 @@ struct MenuPanelView: View {
                 .toggleStyle(.switch)
                 .labelsHidden()
                 .controlSize(.regular)
+                .scaleEffect(PanelMetrics.switchScale)
+                .frame(width: PanelMetrics.switchSize.width, height: PanelMetrics.switchSize.height)
             }
             if let detail = model.detailText {
                 Text(detail)
@@ -87,6 +89,15 @@ private enum PanelMetrics {
     static let rowHeight: CGFloat = 28
     static let highlightInset: CGFloat = 6
     static let highlightRadius: CGFloat = 10
+    /// The system switch is drawn at this fraction of its intrinsic size.
+    static let switchScale: CGFloat = 0.85
+    /// Layout size for the scaled switch, rounded to whole points so it stays pixel-aligned.
+    static let switchSize: CGSize = {
+        let control = NSSwitch()
+        control.controlSize = .regular
+        let size = control.intrinsicContentSize
+        return CGSize(width: (size.width * switchScale).rounded(), height: (size.height * switchScale).rounded())
+    }()
 }
 
 private enum PanelFont {
