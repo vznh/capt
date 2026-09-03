@@ -1,22 +1,43 @@
 import SwiftUI
 
-/// Control-center style panel shown from the menu bar icon, modeled on the Wi-Fi panel:
-/// title with a switch on the right, then grouped rows.
+/// Control-center style panel shown from the menu bar icon, styled after the macOS Wi-Fi panel:
+/// bold title with a switch on the right, secondary section headers, plain rows with trailing
+/// values and chevrons, 14 pt insets, inset dividers.
 struct MenuPanelView: View {
     let model: AppModel
+
+    private static let fontSizes: [Double] = [18, 22, 26, 30, 36, 42]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             PanelDivider()
-            languageSection
+
+            SectionHeader("Language")
+            MenuRow(title: model.localeName(model.settings.locale), value: nil) {
+                ForEach(model.supportedLocales, id: \.identifier) { locale in
+                    Button(model.localeName(locale)) { model.selectLocale(locale) }
+                }
+            }
             PanelDivider()
-            appearanceSection
+
+            SectionHeader("Appearance")
+            MenuRow(title: "Theme", value: model.settings.theme.displayName) {
+                ForEach(CaptionTheme.allCases, id: \.self) { theme in
+                    Button(theme.displayName) { model.settings.theme = theme }
+                }
+            }
+            MenuRow(title: "Text Size", value: "\(Int(model.settings.fontSize)) pt") {
+                ForEach(Self.fontSizes, id: \.self) { size in
+                    Button("\(Int(size)) pt") { model.settings.fontSize = size }
+                }
+            }
             PanelDivider()
-            PanelRow(title: "Permissions", trailingSymbol: "arrow.up.forward.square") {
+
+            ActionRow(title: "Permissions", symbol: "arrow.up.forward.square") {
                 PermissionCenter.openSystemAudioRecordingSettings()
             }
-            PanelRow(title: "Quit Capt", trailingSymbol: nil) {
+            ActionRow(title: "Quit Capt", symbol: nil) {
                 NSApplication.shared.terminate(nil)
             }
         }
@@ -25,10 +46,10 @@ struct MenuPanelView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .center) {
                 Text("Capt")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(PanelFont.title)
                 Spacer()
                 Toggle("Capt", isOn: Binding(
                     get: { model.isEnabled },
@@ -36,113 +57,134 @@ struct MenuPanelView: View {
                 ))
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .controlSize(.regular)
+                .controlSize(.large)
             }
             Text(model.statusText)
-                .font(.system(size: 12))
+                .font(PanelFont.secondary)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-    }
-
-    private var languageSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionTitle("Language")
-            Picker("Language", selection: Binding(
-                get: { model.selectedLocaleTag },
-                set: { model.selectLocale(tag: $0) }
-            )) {
-                ForEach(model.supportedLocales, id: \.identifier) { locale in
-                    Text(model.localeName(locale)).tag(locale.identifier(.bcp47))
-                }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-    }
-
-    private var appearanceSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionTitle("Appearance")
-            Picker("Theme", selection: Binding(
-                get: { model.settings.theme },
-                set: { model.settings.theme = $0 }
-            )) {
-                ForEach(CaptionTheme.allCases, id: \.self) { theme in
-                    Text(theme.displayName).tag(theme)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-
-            HStack {
-                Text("Text size")
-                Spacer()
-                Stepper(
-                    value: Binding(
-                        get: { model.settings.fontSize },
-                        set: { model.settings.fontSize = $0 }
-                    ),
-                    in: 14...48,
-                    step: 2
-                ) {
-                    Text("\(Int(model.settings.fontSize)) pt")
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, PanelMetrics.inset)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 }
 
-private struct SectionTitle: View {
+// MARK: - Style tokens, measured against the Wi-Fi panel
+
+private enum PanelMetrics {
+    static let inset: CGFloat = 14
+    static let rowHeight: CGFloat = 32
+    static let highlightInset: CGFloat = 6
+    static let highlightRadius: CGFloat = 6
+}
+
+private enum PanelFont {
+    static let title = Font.system(size: 17, weight: .bold)
+    static let sectionHeader = Font.system(size: 14, weight: .semibold)
+    static let row = Font.system(size: 15, weight: .regular)
+    static let secondary = Font.system(size: 13, weight: .regular)
+    static let chevron = Font.system(size: 13, weight: .semibold)
+}
+
+private struct SectionHeader: View {
     let text: String
     init(_ text: String) { self.text = text }
 
     var body: some View {
         Text(text)
-            .font(.system(size: 13, weight: .semibold))
+            .font(PanelFont.sectionHeader)
             .foregroundStyle(.secondary)
+            .padding(.horizontal, PanelMetrics.inset)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
     }
 }
 
 private struct PanelDivider: View {
     var body: some View {
-        Divider().padding(.horizontal, 14)
+        Divider()
+            .padding(.horizontal, PanelMetrics.inset)
+            .padding(.vertical, 6)
     }
 }
 
-/// Full-width clickable row with hover highlight and an optional trailing symbol.
-private struct PanelRow: View {
+/// Row content: title on the left, optional secondary value and a trailing symbol on the right.
+private struct RowLabel: View {
     let title: String
-    let trailingSymbol: String?
-    let action: () -> Void
+    let value: String?
+    let symbol: String?
 
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(PanelFont.row)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            if let value {
+                Text(value)
+                    .font(PanelFont.row)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            if let symbol {
+                Image(systemName: symbol)
+                    .font(PanelFont.chevron)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, PanelMetrics.inset)
+        .frame(height: PanelMetrics.rowHeight)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Rounded hover highlight inset from the panel edge, as in Control Center panels.
+private struct RowHighlight: ViewModifier {
     @State private var hovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: PanelMetrics.highlightRadius, style: .continuous)
+                    .fill(Color.primary.opacity(hovering ? 0.1 : 0))
+                    .padding(.horizontal, PanelMetrics.highlightInset)
+            )
+            .onHover { hovering = $0 }
+    }
+}
+
+/// A row that opens a menu of choices. Shows the current value and a chevron on the right.
+private struct MenuRow<Items: View>: View {
+    let title: String
+    let value: String?
+    @ViewBuilder let items: () -> Items
+
+    var body: some View {
+        Menu {
+            items()
+        } label: {
+            RowLabel(title: title, value: value, symbol: "chevron.right")
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .modifier(RowHighlight())
+    }
+}
+
+/// A row that performs an action. Optional trailing symbol, e.g. open-externally.
+private struct ActionRow: View {
+    let title: String
+    let symbol: String?
+    let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack {
-                Text(title)
-                Spacer()
-                if let trailingSymbol {
-                    Image(systemName: trailingSymbol)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            .contentShape(Rectangle())
+            RowLabel(title: title, value: nil, symbol: symbol)
         }
         .buttonStyle(.plain)
-        .background(hovering ? Color.primary.opacity(0.08) : .clear)
-        .onHover { hovering = $0 }
+        .modifier(RowHighlight())
     }
 }
