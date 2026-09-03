@@ -25,14 +25,10 @@ final class CaptionPanel: NSPanel {
         isReleasedWhenClosed = false
         isExcludedFromWindowsMenu = true
 
-        let container = NSView(frame: .zero)
         let host = NSHostingView(rootView: CaptionView(store: store, settings: settings))
-        host.frame = container.bounds
-        host.autoresizingMask = [.width, .height]
         host.wantsLayer = true
         host.layer?.backgroundColor = .clear
-        container.addSubview(host)
-        contentView = container
+        contentView = host
     }
 
     /// Interactive panels accept mouse events; otherwise clicks fall through to whatever is beneath.
