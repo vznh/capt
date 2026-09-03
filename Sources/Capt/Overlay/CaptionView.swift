@@ -30,7 +30,7 @@ struct CaptionView: View {
     }
 
     private var characterSpacing: CGFloat {
-        settings.bionicReadingEnabled ? settings.fontSize * 0.04 : 0
+        settings.bionicReadingEnabled ? settings.fontSize * 0.01 : 0
     }
 
     /// Bounds even punctuation-free speech to the queue's three visible rows.
