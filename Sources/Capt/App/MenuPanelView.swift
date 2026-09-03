@@ -50,6 +50,9 @@ struct MenuPanelView: View {
                 Button("Privacy Policy") { Legal.open(Legal.privacyPolicy) }
                 Button("Terms and Conditions") { Legal.open(Legal.termsAndConditions) }
             }
+            ActionRow(title: "Source", symbol: "chevron.left.forwardslash.chevron.right") {
+                Legal.open(Legal.sourceCode)
+            }
             ActionRow(title: "Quit", symbol: nil) {
                 NSApplication.shared.terminate(nil)
             }
