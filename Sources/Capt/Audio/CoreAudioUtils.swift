@@ -32,7 +32,9 @@ extension AudioObjectID {
             mElement: kAudioObjectPropertyElementMain
         )
         var value = value
-        let err = AudioObjectSetPropertyData(self, &address, 0, nil, UInt32(MemoryLayout<T>.size), &value)
+        let err = withUnsafePointer(to: &value) { ptr in
+            AudioObjectSetPropertyData(self, &address, 0, nil, UInt32(MemoryLayout<T>.size), ptr)
+        }
         guard err == noErr else { throw "Error writing \(selector): \(err)" }
     }
 
