@@ -56,7 +56,12 @@ struct MenuContent: View {
                 .keyboardShortcut("-", modifiers: .command)
         }
 
-        Button("Audio Recording Permissions…") { PermissionCenter.openSystemAudioRecordingSettings() }
+        Button {
+            PermissionCenter.openSystemAudioRecordingSettings()
+        } label: {
+            // Trailing symbol signals this leaves the app for System Settings.
+            Text("Permissions ") + Text(Image(systemName: "arrow.up.forward.square"))
+        }
 
         Divider()
         Button("Quit Capt") { NSApplication.shared.terminate(nil) }
