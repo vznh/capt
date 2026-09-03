@@ -11,6 +11,7 @@ struct MenuPanelView: View {
     /// Easter egg: holding Command while the panel is open shows word counts in the detail line.
     @State private var commandHeld = false
     @State private var flagsMonitor: Any?
+    @State private var showsAdditional = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -47,6 +48,12 @@ struct MenuPanelView: View {
             }
             ActionRow(title: "Resize", symbol: "arrow.up.left.and.arrow.down.right") {
                 model.beginResize()
+            }
+            ActionRow(title: "Additional…", symbol: "slider.horizontal.3") {
+                showsAdditional = true
+            }
+            .popover(isPresented: $showsAdditional, arrowEdge: .trailing) {
+                AdditionalSettingsView(model: model)
             }
             PanelDivider()
 

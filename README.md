@@ -32,6 +32,8 @@ permission and downloads the speech model for your language.
 - **Resize** dims the screen and lets you drag the caption box by its edges to change its width and
   height, or drag its middle to move it. Done saves, Cancel restores, Reset returns the default. The
   box is remembered per display.
+- **Additional…** opens fill and text opacity controls, optional background inversion, and an
+  experimental Bionic-style fixation-emphasis mode.
 - Hold ⌘ with the panel open to see how many words Capt has transcribed.
 
 ## How it works

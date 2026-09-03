@@ -26,7 +26,11 @@ struct CaptionView: View {
     }
 
     private var lineSpacing: CGFloat {
-        settings.fontSize * 0.15
+        settings.fontSize * (settings.bionicReadingEnabled ? 0.3 : 0.15)
+    }
+
+    private var characterSpacing: CGFloat {
+        settings.bionicReadingEnabled ? settings.fontSize * 0.04 : 0
     }
 
     /// Bounds even punctuation-free speech to the queue's three visible rows.
@@ -59,11 +63,12 @@ struct CaptionView: View {
     }
 
     private func caption(_ text: String) -> some View {
-        Text(text)
+        captionText(text)
             .font(.system(size: settings.fontSize, weight: .medium))
             .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
             // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
             .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
+            .tracking(characterSpacing)
             .lineSpacing(lineSpacing)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
@@ -71,10 +76,68 @@ struct CaptionView: View {
             .clipped()
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(
-                settings.theme.fill(for: colorScheme).opacity(fillOpacity),
-                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
-            )
+            .background { captionBackground }
             .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    @ViewBuilder
+    private func captionText(_ text: String) -> some View {
+        if settings.bionicReadingEnabled {
+            Text(fixationEmphasized(text))
+        } else {
+            Text(text)
+        }
+    }
+
+    @ViewBuilder
+    private var captionBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+        if settings.invertsCaptionBackground {
+            shape
+                .fill(Color.white.opacity(fillOpacity))
+                .blendMode(.difference)
+        } else {
+            shape.fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
+        }
+    }
+
+    /// Applies fixation emphasis without changing the underlying text or its accessibility value.
+    private func fixationEmphasized(_ text: String) -> AttributedString {
+        guard !text.isEmpty else { return AttributedString() }
+
+        var result = AttributedString()
+        var cursor = text.startIndex
+        text.enumerateSubstrings(
+            in: text.startIndex..<text.endIndex,
+            options: [.byWords, .substringNotRequired]
+        ) { _, range, _, _ in
+            if cursor < range.lowerBound {
+                append(text[cursor..<range.lowerBound], isWord: false, to: &result)
+            }
+            append(text[range], isWord: true, to: &result)
+            cursor = range.upperBound
+        }
+        if cursor < text.endIndex {
+            append(text[cursor...], isWord: false, to: &result)
+        }
+        return result
+    }
+
+    private func append(_ segment: Substring, isWord: Bool, to result: inout AttributedString) {
+        guard isWord else {
+            var separator = AttributedString(segment)
+            separator.font = .system(size: settings.fontSize, weight: .regular)
+            result += separator
+            return
+        }
+
+        let emphasizedCount = (segment.count + 1) / 2
+        let split = segment.index(segment.startIndex, offsetBy: emphasizedCount)
+        var emphasized = AttributedString(segment[..<split])
+        emphasized.font = .system(size: settings.fontSize, weight: .bold)
+        var remainder = AttributedString(segment[split...])
+        remainder.font = .system(size: settings.fontSize, weight: .regular)
+        result += emphasized
+        result += remainder
     }
 }

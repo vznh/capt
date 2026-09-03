@@ -1,6 +1,6 @@
 # Capt Privacy Policy
 
-**Version 1.1. Effective 2026-09-03.**
+**Version 1.2. Effective 2026-09-03.**
 
 Capt is a macOS app made by 5f ("we", "us"). It listens to the audio your Mac is playing and shows live captions on your screen. This policy explains the app's current data practices.
 
@@ -12,7 +12,7 @@ The short version: **Capt does not track you or collect your data. Nothing you p
 |---|---|---|
 | System audio (everything your Mac is playing) | Captured through Apple's Core Audio process tap and fed to Apple's on-device speech recognizer only while Capt is switched on | Memory only; never written to disk, never transmitted |
 | Captions (the recognized text) | Shown in the overlay for a few seconds, then discarded | Memory only; Capt keeps no transcript or history |
-| Local preferences (language, theme, text size, engine, caption layouts, and total word count) | Stored so Capt remembers your choices and can show your all-time word count | Your Mac's user defaults for Capt; never sent to us |
+| Local preferences (language, appearance and reading options, engine, caption layouts, and total word count) | Stored so Capt remembers your choices and can show your all-time word count | Your Mac's user defaults for Capt; never sent to us |
 
 Capt processes the items above only to provide its features. We do not receive or collect them. Capt does not transmit audio, transcripts, preferences, keystrokes, screen contents, contacts, location, device identifiers, or usage information.
 
