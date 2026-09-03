@@ -45,7 +45,7 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         let transcriber = SpeechTranscriber(
             locale: locale,
             transcriptionOptions: [],
-            reportingOptions: [.volatileResults],
+            reportingOptions: [.volatileResults, .fastResults],
             attributeOptions: []
         )
         self.transcriber = transcriber
