@@ -1,8 +1,9 @@
+import AppKit
 import CaptionCore
 import SwiftUI
 
-/// Caption block pinned to the bottom of the overlay. Sentences stack upward, and long sentences
-/// wrap naturally. When the region fills, its oldest lines roll out above the clipped top edge.
+/// Caption block pinned to the bottom of the overlay. Up to three captions stack upward as a queue,
+/// while long sentences wrap naturally at word boundaries.
 struct CaptionView: View {
     let store: CaptionStore
     let settings: SettingsStore
@@ -22,6 +23,18 @@ struct CaptionView: View {
 
     private var edgeOpacity: Double {
         contrast == .increased ? 1.0 : 0.6
+    }
+
+    private var lineSpacing: CGFloat {
+        settings.fontSize * 0.15
+    }
+
+    /// Bounds even punctuation-free speech to the queue's three visible rows.
+    private var maximumTextHeight: CGFloat {
+        let font = NSFont.systemFont(ofSize: settings.fontSize, weight: .medium)
+        let lineHeight = ceil(font.ascender - font.descender + font.leading)
+        let gaps = CGFloat(max(0, store.maxSentences - 1)) * lineSpacing
+        return CGFloat(store.maxSentences) * lineHeight + gaps
     }
 
     /// A hard sentence boundary should also be a visual boundary. SwiftUI handles
@@ -51,9 +64,11 @@ struct CaptionView: View {
             .foregroundStyle(settings.theme.text(for: colorScheme).opacity(textOpacity))
             // Text edge keeps glyphs legible where the translucent fill sits over bright or busy video.
             .shadow(color: settings.theme.fill(for: colorScheme).opacity(edgeOpacity), radius: 1, x: 0, y: 1)
-            .lineSpacing(settings.fontSize * 0.15)
+            .lineSpacing(lineSpacing)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
+            .frame(maxHeight: maximumTextHeight, alignment: .bottom)
+            .clipped()
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(

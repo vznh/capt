@@ -1,11 +1,11 @@
 import Foundation
 import Observation
 
-/// Holds a bounded rolling window of recent caption text. Pure state, no UI.
+/// Holds the three most recent captions as a first-in, first-out queue. Pure state, no UI.
 @MainActor
 @Observable
 public final class CaptionStore {
-    /// Finalized text, already reduced to the rolling history window.
+    /// Finalized text, already reduced to the visible caption queue.
     public private(set) var committed: String = ""
     /// Sample text shown in place of live captions while adjusting settings.
     public private(set) var previewText: String?
@@ -13,11 +13,12 @@ public final class CaptionStore {
     public private(set) var partial: String = ""
     public private(set) var lastUpdate: Date?
 
+    /// Maximum queue depth. A new sentence pushes the oldest one out.
     public let maxSentences: Int
     /// Safety cap for speech with no sentence boundaries.
     public let maxCharacters: Int
 
-    public init(maxSentences: Int = 12, maxCharacters: Int = 1200) {
+    public init(maxSentences: Int = 3, maxCharacters: Int = 360) {
         self.maxSentences = maxSentences
         self.maxCharacters = maxCharacters
     }

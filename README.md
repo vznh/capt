@@ -64,11 +64,12 @@ LICENSE NOTICE PRIVACY.md TERMS.md
 
 ## Caption style
 
-Fill at 40% opacity and text at 80% opacity. Sentences stack upward from the newest caption, while long
-sentences wrap at word boundaries instead of being truncated. Older lines roll off the top when the
-caption region fills. The box hugs its text and is centered. Nothing animates, and partial results
-redraw at most every 250 ms. A one-point text edge keeps glyphs legible over bright video. Reduce
-Transparency raises the fill to 90%; Increase Contrast makes the text fully opaque.
+Fill at 40% opacity and text at 80% opacity. At most three caption lines stack upward as a queue: each
+new caption enters at the bottom and pushes the oldest one off the top. Long sentences wrap at word
+boundaries, with overflow rolling off the top instead of showing an ellipsis. The box hugs its text and
+is centered. Nothing animates, and partial results redraw at most every 250 ms. A one-point text edge
+keeps glyphs legible over bright video. Reduce Transparency raises the fill to 90%; Increase Contrast
+makes the text fully opaque.
 
 ## Known limitations
 
