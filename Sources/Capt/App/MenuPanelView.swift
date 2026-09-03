@@ -86,7 +86,7 @@ private enum PanelMetrics {
     static let inset: CGFloat = 14
     static let rowHeight: CGFloat = 28
     static let highlightInset: CGFloat = 6
-    static let highlightRadius: CGFloat = 6
+    static let highlightRadius: CGFloat = 10
 }
 
 private enum PanelFont {
