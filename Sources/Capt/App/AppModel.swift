@@ -12,6 +12,7 @@ final class AppModel {
     private(set) var session: CaptionSession?
     private(set) var status: EngineStatus = .idle
     private(set) var errorMessage: String?
+    private(set) var noAudioDetected = false
     private(set) var supportedLocales: [Locale] = []
     private(set) var installedLocales: [Locale] = []
 
@@ -19,6 +20,7 @@ final class AppModel {
 
     var statusText: String {
         if let errorMessage { return errorMessage }
+        if noAudioDetected { return "No audio is being detected." }
         switch status {
         case .idle: return "Off"
         case .preparingModel(let p):
@@ -47,6 +49,7 @@ final class AppModel {
         let session = CaptionSession(capture: SystemAudioTap(), engine: engine, store: store)
         session.onStatus = { [weak self] in self?.status = $0 }
         session.onError = { [weak self] in self?.errorMessage = $0 }
+        session.onSilenceChanged = { [weak self] in self?.noAudioDetected = $0 }
         self.session = session
         do {
             try await session.start()
@@ -62,6 +65,7 @@ final class AppModel {
         await session?.stop()
         session = nil
         status = .idle
+        noAudioDetected = false
     }
 
     func selectLocale(_ locale: Locale) {

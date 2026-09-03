@@ -5,7 +5,10 @@ import Foundation
 public final class SilenceWatchdog: @unchecked Sendable {
     public enum Verdict: Sendable, Equatable {
         case ok
+        /// Silence exceeded the threshold. Reported once per silent stretch.
         case silentTooLong
+        /// Audio came back after `silentTooLong` was reported.
+        case audioResumed
     }
 
     private let threshold: TimeInterval
@@ -22,6 +25,10 @@ public final class SilenceWatchdog: @unchecked Sendable {
     public func observe(peak: Float, at date: Date) -> Verdict {
         if peak > peakFloor {
             firstSilentAt = nil
+            if fired {
+                fired = false
+                return .audioResumed
+            }
             return .ok
         }
         guard !fired else { return .ok }

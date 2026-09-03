@@ -9,6 +9,8 @@ public final class CaptionSession {
 
     public var onStatus: ((EngineStatus) -> Void)?
     public var onError: ((String) -> Void)?
+    /// True when the tap has delivered only silence for the watchdog threshold; false once audio returns.
+    public var onSilenceChanged: ((Bool) -> Void)?
 
     /// Seconds without new text before the overlay clears.
     public var idleTimeout: TimeInterval = 5
@@ -46,10 +48,14 @@ public final class CaptionSession {
         let watchdog = SilenceWatchdog()
         let engine = self.engine
         try capture.start { [weak self] buffer in
-            if let peak = AudioLevel.peak(of: buffer),
-               watchdog.observe(peak: peak, at: Date()) == .silentTooLong {
-                Task { @MainActor in
-                    self?.onError?("No audio is reaching Capt. Check System Settings > Privacy & Security > Screen & System Audio Recording.")
+            if let peak = AudioLevel.peak(of: buffer) {
+                switch watchdog.observe(peak: peak, at: Date()) {
+                case .silentTooLong:
+                    Task { @MainActor in self?.onSilenceChanged?(true) }
+                case .audioResumed:
+                    Task { @MainActor in self?.onSilenceChanged?(false) }
+                case .ok:
+                    break
                 }
             }
             engine.send(buffer)
