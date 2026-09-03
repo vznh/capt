@@ -78,7 +78,7 @@ struct MenuPanelView: View {
         }
         .padding(.horizontal, PanelMetrics.inset)
         .padding(.top, 8)
-        .padding(.bottom, 10)
+        .padding(.bottom, 4)
     }
 }
 
