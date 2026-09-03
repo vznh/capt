@@ -76,20 +76,11 @@ struct CaptionView: View {
             .clipped()
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background { captionBackground }
+            .background(
+                settings.theme.fill(for: colorScheme).opacity(fillOpacity),
+                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+            )
             .accessibilityAddTraits(.updatesFrequently)
-    }
-
-    @ViewBuilder
-    private var captionBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-        if settings.invertsCaptionBackground {
-            shape
-                .fill(Color.white.opacity(fillOpacity))
-                .blendMode(.difference)
-        } else {
-            shape.fill(settings.theme.fill(for: colorScheme).opacity(fillOpacity))
-        }
     }
 
     @ViewBuilder

@@ -11,13 +11,6 @@ struct AdditionalSettingsView: View {
                     .font(.headline)
                 OpacityControl(title: "Fill", value: fillOpacity)
                 OpacityControl(title: "Text", value: textOpacity, range: 0.2 ... 1)
-                HStack {
-                    Text("Invert fill")
-                    Spacer()
-                    Toggle("Invert fill", isOn: invertsBackground)
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                }
             }
 
             Divider()
@@ -57,13 +50,6 @@ struct AdditionalSettingsView: View {
         Binding(
             get: { model.settings.textOpacity },
             set: { model.settings.textOpacity = $0 }
-        )
-    }
-
-    private var invertsBackground: Binding<Bool> {
-        Binding(
-            get: { model.settings.invertsCaptionBackground },
-            set: { model.settings.invertsCaptionBackground = $0 }
         )
     }
 

@@ -65,10 +65,6 @@ final class SettingsStore {
         didSet { defaults.set(textOpacity, forKey: Keys.textOpacity) }
     }
 
-    var invertsCaptionBackground: Bool {
-        didSet { defaults.set(invertsCaptionBackground, forKey: Keys.invertsBackground) }
-    }
-
     var bionicReadingEnabled: Bool {
         didSet { defaults.set(bionicReadingEnabled, forKey: Keys.bionicReading) }
     }
@@ -90,7 +86,6 @@ final class SettingsStore {
         engineKind = EngineKind(rawValue: defaults.string(forKey: Keys.engine) ?? "") ?? .speechAnalyzer
         fillOpacity = Self.storedOpacity(defaults, key: Keys.fillOpacity, fallback: 0.4)
         textOpacity = Self.storedOpacity(defaults, key: Keys.textOpacity, fallback: 0.8)
-        invertsCaptionBackground = defaults.bool(forKey: Keys.invertsBackground)
         bionicReadingEnabled = defaults.bool(forKey: Keys.bionicReading)
         totalWordCount = defaults.integer(forKey: Keys.totalWords)
     }
@@ -109,7 +104,6 @@ final class SettingsStore {
         static let engine = "captions.engine"
         static let fillOpacity = "captions.fillOpacity"
         static let textOpacity = "captions.textOpacity"
-        static let invertsBackground = "captions.invertsBackground"
         static let bionicReading = "captions.bionicReading"
         static let totalWords = "captions.totalWords"
     }
