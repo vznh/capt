@@ -1,9 +1,8 @@
 import SwiftUI
 import AppKit
 
-/// Lets a row in a MenuBarExtra-style panel show a specific `NSCursor` while hovered and
-/// receive vertical scroll-wheel / trackpad deltas during the hover, consuming those events
-/// so the enclosing panel does not scroll.
+/// Attaches a custom `NSCursor` and a scroll-wheel handler to any view while it is hovered,
+/// consuming the scroll events so the enclosing panel does not scroll. Used by the menu panel rows.
 ///
 /// Implementation notes:
 /// - Uses `NSEvent.addLocalMonitorForEvents(matching: .scrollWheel)` rather than an

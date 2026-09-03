@@ -23,6 +23,8 @@ public final class CaptionStore {
         self.maxCharacters = maxCharacters
     }
 
+    // MARK: - Rendering
+
     /// Text to render: an active preview if set, otherwise the last
     /// `maxSentences` sentences of committed text plus the live partial.
     public var displayText: String {
@@ -44,6 +46,8 @@ public final class CaptionStore {
 
     /// Sentences currently displayed, for tests and layout.
     public var sentences: [String] { SentenceSplitter.split(displayText) }
+
+    // MARK: - Events
 
     public func apply(_ event: CaptionEvent, at date: Date = Date()) {
         switch event {

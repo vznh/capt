@@ -28,6 +28,8 @@ public final class CaptionSession {
     private var partialCooldown: Task<Void, Never>?
     private var pendingPartial: String?
 
+    // MARK: - Lifecycle
+
     public init(capture: AudioCapturing, engine: TranscriptionEngine, store: CaptionStore) {
         self.capture = capture
         self.engine = engine
@@ -91,6 +93,8 @@ public final class CaptionSession {
         status = .stopped
         onStatus?(.stopped)
     }
+
+    // MARK: - Private
 
     /// Cancels every task first so nothing can write to the store mid-teardown, then stops audio and the engine.
     /// Safe to call from a failed start as well as from `stop()`.

@@ -2,8 +2,8 @@ import Foundation
 import NaturalLanguage
 
 /// Language-agnostic sentence segmentation via NaturalLanguage. Handles CJK punctuation too.
-public enum SentenceSplitter {
-    public static func split(_ text: String) -> [String] {
+enum SentenceSplitter {
+    static func split(_ text: String) -> [String] {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
 

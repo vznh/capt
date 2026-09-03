@@ -21,8 +21,12 @@ final class AppModel {
     /// Leftover scroll delta between adjustments.
     private var scrollAccumulator: CGFloat = 0
 
+    // MARK: - Dependencies
+
     let store = CaptionStore()
     let settings = SettingsStore()
+
+    // MARK: - State
 
     private(set) var session: CaptionSession?
     /// The in-flight `start()`, so `stop()` can wait for it instead of orphaning a half-started session.
@@ -69,6 +73,8 @@ final class AppModel {
         case .idle, .running, .stopped: return nil
         }
     }
+
+    // MARK: - Intents
 
     func loadLocales() async {
         supportedLocales = await SpeechAnalyzerEngine.supportedLocales
@@ -135,6 +141,8 @@ final class AppModel {
     func localeName(_ locale: Locale) -> String {
         Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
     }
+
+    // MARK: - Preview and text size
 
     /// Shows sample caption text in the overlay for a few seconds so the user can judge the font size.
     func previewCaptions() {
