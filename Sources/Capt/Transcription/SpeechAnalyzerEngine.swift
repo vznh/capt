@@ -30,6 +30,22 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         get async { await SpeechTranscriber.supportedLocales }
     }
 
+    /// Reports whether each locale's transcription assets are ready without reserving or
+    /// downloading anything. Asset installation remains an explicit consequence of starting Capt.
+    static func assetInstallationStatus(for locales: [Locale]) async -> [String: Bool] {
+        var result: [String: Bool] = [:]
+        result.reserveCapacity(locales.count)
+        for locale in locales {
+            result[locale.identifier] = await assetsAreInstalled(for: locale)
+        }
+        return result
+    }
+
+    static func assetsAreInstalled(for locale: Locale) async -> Bool {
+        let transcriber = makeTranscriber(locale: locale)
+        return await AssetInventory.status(forModules: [transcriber]) == .installed
+    }
+
     func prepare() async throws {
         guard SpeechTranscriber.isAvailable else {
             throw CaptError("SpeechAnalyzer is not available on this Mac.")
@@ -38,12 +54,7 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
             throw CaptError("Language \(requestedLocale.identifier) is not supported by SpeechAnalyzer.")
         }
 
-        let transcriber = SpeechTranscriber(
-            locale: locale,
-            transcriptionOptions: [],
-            reportingOptions: [.volatileResults, .fastResults],
-            attributeOptions: []
-        )
+        let transcriber = Self.makeTranscriber(locale: locale)
         self.transcriber = transcriber
 
         try await ensureAssets(for: transcriber, locale: locale)
@@ -122,5 +133,14 @@ final class SpeechAnalyzerEngine: TranscriptionEngine, @unchecked Sendable {
         }
         defer { progressTask.cancel() }
         try await request.downloadAndInstall()
+    }
+
+    private static func makeTranscriber(locale: Locale) -> SpeechTranscriber {
+        SpeechTranscriber(
+            locale: locale,
+            transcriptionOptions: [],
+            reportingOptions: [.volatileResults, .fastResults],
+            attributeOptions: []
+        )
     }
 }

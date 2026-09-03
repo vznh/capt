@@ -38,6 +38,8 @@ final class AppModel {
     private(set) var errorMessage: String?
     private(set) var noAudioDetected = false
     private(set) var supportedLocales: [Locale] = []
+    /// Locale identifier to installed-state. A missing entry means the status is still loading.
+    private(set) var localeAssetsInstalled: [String: Bool] = [:]
     private var previewTask: Task<Void, Never>?
 
     /// What the user asked for. Flips immediately so the switch does not snap back while the engine starts.
@@ -104,8 +106,19 @@ final class AppModel {
     }
 
     func loadLocales() async {
-        supportedLocales = await SpeechAnalyzerEngine.supportedLocales
+        let locales = await SpeechAnalyzerEngine.supportedLocales
             .sorted { localeName($0) < localeName($1) }
+        supportedLocales = locales
+        localeAssetsInstalled = await SpeechAnalyzerEngine.assetInstallationStatus(for: locales)
+    }
+
+    func refreshLocaleAssetStatus() async {
+        guard !supportedLocales.isEmpty else { return }
+        localeAssetsInstalled = await SpeechAnalyzerEngine.assetInstallationStatus(for: supportedLocales)
+    }
+
+    func localeRequiresDownload(_ locale: Locale) -> Bool {
+        localeAssetsInstalled[locale.identifier] == false
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -144,6 +157,7 @@ final class AppModel {
         startTask = task
         await task.value
         startTask = nil
+        await refreshLocaleAssetStatus()
     }
 
     func stop() async {

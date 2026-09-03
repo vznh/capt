@@ -21,7 +21,19 @@ struct MenuPanelView: View {
             SectionHeader("Language")
             MenuRow(title: model.localeName(model.settings.locale), value: nil) {
                 ForEach(model.supportedLocales, id: \.identifier) { locale in
-                    Button(model.localeName(locale)) { model.selectLocale(locale) }
+                    Button {
+                        model.selectLocale(locale)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(model.localeName(locale))
+                            if model.localeRequiresDownload(locale) {
+                                Spacer(minLength: 12)
+                                Image(systemName: "icloud.and.arrow.down")
+                                    .foregroundStyle(.secondary)
+                                    .accessibilityLabel("Download required")
+                            }
+                        }
+                    }
                 }
             }
             PanelDivider()
@@ -74,6 +86,7 @@ struct MenuPanelView: View {
         .padding(.vertical, 6)
         .frame(width: 300)
         .onAppear {
+            Task { await model.refreshLocaleAssetStatus() }
             commandHeld = NSEvent.modifierFlags.contains(.command)
             flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
                 commandHeld = event.modifierFlags.contains(.command)
