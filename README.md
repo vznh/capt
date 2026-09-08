@@ -30,17 +30,6 @@ or [Apple's guidance](https://support.apple.com/en-us/102445).
 The released app reflects its tagged source; the features documented below may include newer
 changes on the default branch.
 
-## Build and run
-
-```sh
-Scripts/run.sh            # release build, bundles build/Capt.app, launches it
-Scripts/build.sh debug    # bundle only
-```
-
-Click the menu bar icon and flip the **Capt** switch. On first use, macOS asks for **System Audio
-Recording** permission and downloads Apple's on-device speech model for the selected language if it
-is not already installed.
-
 ## Known limitations
 
 - **Language is chosen, not detected.** SpeechAnalyzer needs a locale up front. Auto-detection needs a
