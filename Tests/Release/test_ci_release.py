@@ -14,11 +14,9 @@ spec.loader.exec_module(release)
 
 class ReleaseMetadataTests(unittest.TestCase):
     def test_targets(self):
-        self.assertEqual(release.release_target("refs/heads/master", "0.2.0", "12", "2", "abcdefghi"),
-                         ("master-12-2", "Capt master abcdefg", True))
         self.assertEqual(release.release_target("refs/tags/v0.2.0", "0.2.0", "12", "1", "abc"),
                          ("v0.2.0", "Capt 0.2.0", False))
-        for ref in ["refs/tags/v0.1.0", "refs/tags/v0.2.0-rc1", "refs/heads/feature"]:
+        for ref in ["refs/heads/master", "refs/tags/v0.1.0", "refs/tags/v0.2.0-rc1", "refs/heads/feature"]:
             with self.assertRaises(ValueError):
                 release.release_target(ref, "0.2.0", "12", "1", "abc")
 

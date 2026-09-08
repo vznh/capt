@@ -9,11 +9,9 @@ import subprocess
 
 
 def release_target(ref, version, run_id, attempt, sha):
-    if ref == "refs/heads/master":
-        return f"master-{run_id}-{attempt}", f"Capt master {sha[:7]}", True
     tag = ref.removeprefix("refs/tags/")
     if not ref.startswith("refs/tags/") or not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
-        raise ValueError("Use master or a version tag in the form vX.Y.Z")
+        raise ValueError("Use a version tag in the form vX.Y.Z")
     if tag != f"v{version}":
         raise ValueError(f"Tag {tag} does not match Info.plist version {version}")
     return tag, f"Capt {version}", False

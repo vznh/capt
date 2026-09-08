@@ -1,39 +1,33 @@
-name: Package Capt
+name: Build Capt
 
 on:
   push:
-    tags: ['v*']
-  workflow_dispatch:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   package:
-    if: startsWith(github.ref, 'refs/tags/v')
-    concurrency:
-      group: release-${{ github.ref }}
-      cancel-in-progress: false
-    permissions:
-      contents: write
+    name: Build and verify
     runs-on: macos-26
     timeout-minutes: 20
     env:
       CAPT_SIGN_IDENTITY: '-'
     steps:
-      - name: Check out the pushed commit
+      - name: Check out the commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
 
       - name: Test release metadata
         run: python3 -m unittest discover -s Tests/Release -v
-
-      - name: Prepare release metadata
-        id: release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 Scripts/ci-release.py
 
       - name: Check Apple Silicon toolchain
         run: |
@@ -57,47 +51,33 @@ jobs:
 
       - name: Record source and build
         env:
-          SOURCE_SHA: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 'master' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          MERGE_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            printf 'Source commit: %s\n' "$SOURCE_SHA"
+            printf 'Pull request: %s\n' "$PR_NUMBER"
+            printf 'PR head commit: %s\n' "$HEAD_SHA"
+            printf 'Tested merge commit: %s\n' "$MERGE_SHA"
             printf 'Build: %s\n' "$RUN_URL"
             printf 'Requirements: Apple Silicon, macOS 26 or newer\n'
             printf 'Signing: ad-hoc; not notarized by Apple\n'
           } > build/packages/BUILD.txt
 
-      - name: Upload packages
+      - name: Upload preview downloads
+        id: upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: Capt-arm64-${{ github.sha }}-${{ github.run_attempt }}
+          name: Capt-preview-${{ github.event.pull_request.number || 'master' }}-arm64-${{ github.sha }}-${{ github.run_attempt }}
           path: build/packages/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
 
-      - name: Publish release downloads
-        id: publish
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          name: ${{ steps.release.outputs.name }}
-          body_path: .release-notes.md
-          draft: ${{ steps.release.outputs.draft }}
-          prerelease: ${{ steps.release.outputs.prerelease }}
-          make_latest: ${{ steps.release.outputs.make_latest }}
-          generate_release_notes: ${{ steps.release.outputs.generate_notes }}
-          overwrite_files: false
-          fail_on_unmatched_files: true
-          files: |
-            build/packages/*.dmg
-            build/packages/*.zip
-            build/packages/*.sha256
-            build/packages/BUILD.txt
-
-      - name: Link to downloads
+      - name: Link to preview downloads
         env:
-          RELEASE_URL: ${{ steps.publish.outputs.url }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
         run: |
-          printf 'Download: %s\n' "$RELEASE_URL" >> "$GITHUB_STEP_SUMMARY"
+          printf '[Download preview build](%s) (GitHub sign-in required).\n\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Contains a DMG, ZIP, checksums, and BUILD.txt. Apple Silicon, macOS 26+. Ad-hoc signed; not notarized.\n' >> "$GITHUB_STEP_SUMMARY"

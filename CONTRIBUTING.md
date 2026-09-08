@@ -28,6 +28,13 @@ choice; see [README.md](README.md#known-limitations).
   else should need to change.
 - One primary type per file, named after the type, with a `///` comment on it explaining its role.
 
+## Branches and pull requests
+
+Never push directly to `master`. Create a feature branch for every change, including docs,
+open a PR, and merge through GitHub after **Build and verify** passes. Do not bypass branch
+rules or force-push `master`. PRs provide preview downloads; merged master commits are verified
+again; only version tags publish releases. See [RELEASE.md](RELEASE.md).
+
 ## Commits
 
 One concise sentence in the imperative, describing the change. No trailers, no co-author lines.
