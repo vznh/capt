@@ -1,0 +1,89 @@
+name: Package Capt
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      CAPT_SIGN_IDENTITY: '-'
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Check Apple Silicon toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          swift --version
+          sdk_version=$(xcrun --sdk macosx --show-sdk-version)
+          test "${sdk_version%%.*}" -ge 26
+
+      - name: Build and package
+        run: Scripts/package.sh local
+
+      - name: Verify downloads
+        run: |
+          codesign --verify --deep --strict build/Capt.app
+          test "$(lipo -archs build/Capt.app/Contents/MacOS/Capt)" = arm64
+          cd build/packages
+          shasum -a 256 -c ./*.sha256
+          for archive in ./*.zip; do unzip -tq "$archive"; done
+          for disk_image in ./*.dmg; do hdiutil verify "$disk_image"; done
+
+      - name: Record source and build
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            printf 'Source commit: %s\n' "$SOURCE_SHA"
+            printf 'Build: %s\n' "$RUN_URL"
+            printf 'Requirements: Apple Silicon, macOS 26 or newer\n'
+            printf 'Signing: ad-hoc; not notarized by Apple\n'
+          } > build/packages/BUILD.txt
+
+      - name: Upload packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: Capt-arm64-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/packages/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish a master prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          BUILD_TAG: master-${{ github.run_id }}-${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            printf 'Automated build from master commit `%s`.\n\n' "$SOURCE_SHA"
+            printf 'Requires **Apple Silicon (M1 or newer) and macOS 26+**.\n\n'
+            printf '1. Download the DMG below and open it.\n'
+            printf '2. Drag Capt into Applications and open it.\n'
+            printf '3. Click the menu bar icon, select the spoken language, and enable Capt.\n'
+            printf '4. Allow System Audio Recording. The speech model may download on first use.\n\n'
+            printf '**This development build is ad-hoc signed and not notarized by Apple.** If you trust it and macOS blocks opening it, use System Settings → Privacy & Security → Open Anyway after trying to open Capt. See [Apple’s instructions](https://support.apple.com/en-us/102445).\n\n'
+            printf 'The ZIP is an alternative download. SHA-256 checksums and BUILD.txt are attached.\n\n'
+            printf '[Build logs](%s)\n' "$RUN_URL"
+          } > build/prerelease-notes.md
+          gh release create "$BUILD_TAG" --target "$SOURCE_SHA" \
+            --prerelease --latest=false --title "Capt master ${SOURCE_SHA:0:7}" \
+            --notes-file build/prerelease-notes.md build/packages/*
+          printf 'Download: https://github.com/%s/releases/tag/%s\n' "$GH_REPO" "$BUILD_TAG" >> "$GITHUB_STEP_SUMMARY"

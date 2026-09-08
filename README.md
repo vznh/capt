@@ -15,6 +15,9 @@ Born from watching videos on sites that don't ship captions. Accessibility first
 The current downloads require an **Apple Silicon Mac (M1 or newer) and macOS 26+**.
 You do not need Xcode to use the app.
 
+For newer changes, [automated master prereleases](https://github.com/vznh/capt/releases)
+are built on every push. These are development builds; the Latest release is the stable download.
+
 1. Download the DMG from the release page.
 2. Open it and drag Capt into Applications.
 3. Open Capt, click its menu bar icon, select the spoken language, and enable Capt.

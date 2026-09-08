@@ -5,6 +5,27 @@ and open it. They do not need Swift, Xcode, or the source repository. ZIP downlo
 provided. Builds currently target the build machine's architecture; filenames identify it.
 macOS 26 or newer is required.
 
+## Automatic master builds
+
+Every push to `master` runs [Package Capt](https://github.com/vznh/capt/actions/workflows/package.yml)
+on a GitHub-hosted Apple Silicon macOS 26 runner. It builds the pushed commit, verifies the
+app signature, archives, and checksums, and publishes a separate **prerelease** with a DMG,
+ZIP, checksums, and source/build metadata. No signing secrets are needed for these ad-hoc builds.
+
+Find public downloads on the [releases page](https://github.com/vznh/capt/releases).
+Each successful run gets a unique `master-<run-id>-<attempt>` tag at its source commit;
+reruns cannot overwrite another build. These builds do not replace the stable Latest release.
+The same files are also retained as Actions artifacts for 30 days. Prerelease assets remain
+available until the release is deleted. GitHub may require sign-in to download Actions artifacts.
+
+There is no path filter or cancellation of older pushes: each pushed commit gets a build.
+A failed check stops publication. Inspect the failed Actions run and choose **Re-run failed jobs**
+after resolving a transient runner problem, or push a fix. You can also run the workflow manually
+on `master`. Builds usually take about 3–8 minutes, plus any runner queue time.
+
+These are development downloads, not notarized releases. Users may need the first-launch
+exception described in their release notes. Stable notarized releases use the setup below.
+
 ## Local packaging
 
 ```sh
