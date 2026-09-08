@@ -6,3 +6,6 @@ build/
 .swiftpm/
 DerivedData/
 .claude/
+
+__pycache__/
+.release-notes.md

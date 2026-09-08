@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
-# Build notarized downloads and upload a draft GitHub release for an existing tag.
+# Tag the already-pushed version and let GitHub Actions package and publish it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'error: version must be X.Y.Z' >&2; exit 1; }
 TAG="v$VERSION"
-command -v gh >/dev/null || { echo 'error: install the GitHub CLI (gh) first' >&2; exit 1; }
 [ -z "$(git status --porcelain)" ] || { echo 'error: commit your release changes first' >&2; exit 1; }
-[ "$(git rev-parse "$TAG^{commit}")" = "$(git rev-parse HEAD)" ] || {
-  echo "error: $TAG must point to HEAD" >&2; exit 1;
+HEAD_SHA=$(git rev-parse HEAD)
+REMOTE_SHA=$(git ls-remote origin refs/heads/master | cut -f1)
+[ "$HEAD_SHA" = "$REMOTE_SHA" ] || {
+  echo 'error: push this commit to origin/master before releasing' >&2; exit 1;
 }
-gh auth status
-REMOTE_TAG=$(git ls-remote origin "refs/tags/$TAG" "refs/tags/$TAG^{}")
-printf '%s\n' "$REMOTE_TAG" | grep -q "^$(git rev-parse HEAD)[[:space:]]" || {
-  echo "error: push $TAG to origin at this commit first" >&2; exit 1;
-}
-Scripts/package.sh release
-ARCH=$(lipo -archs build/Capt.app/Contents/MacOS/Capt | tr ' ' '-')
-NAME="Capt-$VERSION-$ARCH"
-gh release create "$TAG" --repo vznh/capt --verify-tag --draft --title "Capt $VERSION" \
-  --generate-notes "build/packages/$NAME.dmg" "build/packages/$NAME.zip" "build/packages/$NAME.sha256"
+if git show-ref --verify --quiet "refs/tags/$TAG"; then
+  [ "$(git rev-parse "$TAG^{commit}")" = "$HEAD_SHA" ] || {
+    echo "error: $TAG already points to another commit; bump the version" >&2; exit 1;
+  }
+else
+  git tag "$TAG" "$HEAD_SHA"
+fi
+git push origin "refs/tags/$TAG"
+echo "Release tag: $TAG"
+echo 'Watch packaging: https://github.com/vznh/capt/actions/workflows/package.yml'
+echo 'If the tag was already pushed, re-run its existing Actions run to retry packaging.'

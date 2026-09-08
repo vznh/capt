@@ -21,7 +21,7 @@ available until the release is deleted. GitHub may require sign-in to download A
 There is no path filter or cancellation of older pushes: each pushed commit gets a build.
 A failed check stops publication. Inspect the failed Actions run and choose **Re-run failed jobs**
 after resolving a transient runner problem, or push a fix. You can also run the workflow manually
-on `master`. Builds usually take about 3–8 minutes, plus any runner queue time.
+on `master` or an existing version tag. Builds usually take about 3–8 minutes, plus any runner queue time.
 
 These are development downloads, not notarized releases. Users may need the first-launch
 exception described in their release notes. Stable notarized releases use the setup below.
@@ -75,16 +75,46 @@ Apple submissions require network access and can take several minutes or longer.
 The script stops on signing, notarization, or validation failures. For a rejected submission,
 use `xcrun notarytool log SUBMISSION_ID --keychain-profile Capt-notary` to inspect Apple's report.
 
-## Publish on GitHub
+## Versioned GitHub releases
 
-1. Update `CFBundleShortVersionString` and increment `CFBundleVersion` in
-   `Resources/Info.plist`; commit the release changes.
-2. Create and push the matching tag, for example `git tag v0.1.0` followed by
-   `git push origin v0.1.0` (substitute the actual version).
-3. Run `Scripts/release.sh` with an authenticated GitHub CLI. It requires a clean checkout
-   at the tagged commit, builds fresh notarized packages, and uploads a **draft** release
-   to `vznh/capt` with generated release notes.
-4. Review the draft and test the downloaded app on another Mac before clicking Publish.
+The same workflow also runs when you push a `vX.Y.Z` tag. It uses
+[softprops/action-gh-release](https://github.com/softprops/action-gh-release), pinned to v3.0.3,
+to create the release and upload its DMG, ZIP, checksums, and build metadata.
+
+1. Update `CFBundleShortVersionString` in `Resources/Info.plist` (for example, `0.2.0`)
+   and increment `CFBundleVersion`.
+2. Commit and push the changes to `master`.
+3. Run `Scripts/release.sh`. It checks that your clean checkout matches remote `master`,
+   creates the matching version tag if needed, and pushes it. GitHub handles packaging.
+
+Equivalent tagging commands, after updating the version and pushing the commit:
+
+```sh
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+A tag must exactly match the app version. Invalid or mismatched version tags fail before
+compilation. New versioned releases get installation instructions and generated release notes;
+GitHub determines Latest by its date/version rules (`make_latest: legacy`). Master builds remain
+prereleases and never become Latest.
+
+If a release already exists, its notes, title, draft status, and prerelease status are preserved.
+The action attaches missing files and skips existing filenames (`overwrite_files: false`).
+Re-running a job therefore does not replace files people already downloaded. For an intentional
+binary update, bump the app version and create a new tag. Immutable published releases cannot
+accept new assets; the workflow stops with an explanation.
+
+To attach packages to an existing tag, select **Run workflow** and choose that tag, provided
+its commit contains this workflow and matches the bundle version. Tags from before this workflow
+was added, including the original `0.1` release, retain their existing manual downloads.
+A tag created by GitHub Actions using `GITHUB_TOKEN` does not trigger another push workflow;
+create version tags from your terminal as above.
+
+These CI downloads are currently **ad-hoc signed and not notarized**, including versioned
+releases. Developer ID signing and notarization remain a separate setup; `Scripts/package.sh release`
+still supports notarized local packaging. `Scripts/release.sh` now triggers CI and no longer
+builds a notarized draft on your Mac.
 
 The scripts never store signing keys in Git. A future CI workflow can run the same packaging
 script with a temporary signing Keychain and protected secrets. Automatic updates and Homebrew
