@@ -9,6 +9,25 @@ tracking. Audio and caption text stay in memory and are never saved or sent anyw
 
 Born from watching videos on sites that don't ship captions. Accessibility first.
 
+## Download and install
+
+[Download the latest release](https://github.com/vznh/capt/releases/latest).
+The current downloads require an **Apple Silicon Mac (M1 or newer) and macOS 26+**.
+You do not need Xcode to use the app.
+
+1. Download the DMG from the release page.
+2. Open it and drag Capt into Applications.
+3. Open Capt, click its menu bar icon, select the spoken language, and enable Capt.
+4. Grant System Audio Recording permission when prompted. The first use of a language
+   may download Apple's on-device speech model.
+
+Current alpha downloads are ad-hoc signed and **not notarized by Apple**. If macOS blocks
+opening Capt and you trust this release, follow the release page's first-launch instructions
+or [Apple's guidance](https://support.apple.com/en-us/102445).
+
+The released app reflects its tagged source; the features documented below may include newer
+changes on the default branch.
+
 ## Requirements
 
 - macOS 26 or newer. SpeechAnalyzer is the on-device recognizer.
@@ -24,6 +43,15 @@ Scripts/build.sh debug    # bundle only
 Click the menu bar icon and flip the **Capt** switch. On first use, macOS asks for **System Audio
 Recording** permission and downloads Apple's on-device speech model for the selected language if it
 is not already installed.
+
+## Build a downloadable app
+
+```sh
+Scripts/package.sh local  # build/packages/: DMG, ZIP, and checksums for local use
+```
+
+Open the DMG and drag Capt into Applications. For signed, notarized public downloads and
+GitHub release publishing, see [RELEASE.md](RELEASE.md).
 
 ## Using it
 
@@ -88,7 +116,7 @@ makes the text fully opaque.
   Recording grant keyed to it) survives rebuilds. `CAPT_SIGN_IDENTITY` overrides the choice;
   `-` forces ad-hoc, and the script warns that permissions may be re-requested after each rebuild.
 - **Local builds are not notarized.** The build script produces a hardened, signed app for local use;
-  distributing it through Gatekeeper requires a separate notarization workflow.
+  use `Scripts/package.sh release` for notarized downloads (see [RELEASE.md](RELEASE.md)).
 - If captions never appear and the panel says no audio is being detected, grant System Audio Recording
   in System Settings › Privacy & Security.
 

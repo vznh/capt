@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
+case "$CONFIG" in debug|release) ;; *) echo 'Usage: Scripts/build.sh [debug|release]' >&2; exit 1 ;; esac
 APP="build/Capt.app"
 
 # Signing identity resolution, in order of stability:
@@ -40,6 +41,19 @@ resolve_sign_identity() {
 }
 
 SIGN_IDENTITY="$(resolve_sign_identity)"
+TIMESTAMP=--timestamp=none
+if [ "${CAPT_DISTRIBUTION:-0}" = 1 ]; then
+  # Public downloads require a Developer ID certificate and secure timestamp.
+  : "${CAPT_SIGN_IDENTITY:?Set CAPT_SIGN_IDENTITY to a Developer ID Application certificate name}"
+  case "$SIGN_IDENTITY" in
+    "Developer ID Application: "*) ;;
+    *) echo 'error: distribution requires a Developer ID Application certificate name' >&2; exit 1 ;;
+  esac
+  security find-identity -v -p codesigning | grep -F -- "\"$SIGN_IDENTITY\"" >/dev/null || {
+    echo 'error: the requested Developer ID identity is not available in the keychain' >&2; exit 1;
+  }
+  TIMESTAMP=--timestamp
+fi
 if [ -z "$SIGN_IDENTITY" ] || [ "$SIGN_IDENTITY" = "-" ]; then
   SIGN_IDENTITY="-"
   echo "warning: Capt.app will be ad-hoc signed (no stable identity selected)." >&2
@@ -60,9 +74,10 @@ echo -n "APPL????" > "$APP/Contents/PkgInfo"
 # Fail loudly rather than silently downgrading: a failed signature means the
 # app will not launch correctly, so never continue past it.
 if ! codesign --force --sign "$SIGN_IDENTITY" --entitlements Resources/Capt.entitlements \
-    --options runtime --timestamp=none "$APP"; then
+    --options runtime "$TIMESTAMP" "$APP"; then
   echo "error: signing Capt.app failed with identity '$SIGN_IDENTITY'." >&2
   exit 1
 fi
 
+codesign --verify --deep --strict "$APP"
 echo "Built $APP"

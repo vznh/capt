@@ -36,7 +36,9 @@ Each commit builds on its own.
 ## Releases
 
 Tag `v<semver>` and bump `CFBundleShortVersionString` in `Resources/Info.plist` to match.
+Increment `CFBundleVersion` for each release as well.
 Release notes live on the GitHub release, not in a changelog file.
+See [RELEASE.md](RELEASE.md) for packaging, notarization, and draft release commands.
 
 ## Reporting problems
 
