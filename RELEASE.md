@@ -5,26 +5,37 @@ and open it. They do not need Swift, Xcode, or the source repository. ZIP downlo
 provided. Builds currently target the build machine's architecture; filenames identify it.
 macOS 26 or newer is required.
 
-## Automatic master builds
+## Pull request builds
 
-Every push to `master` runs [Package Capt](https://github.com/vznh/capt/actions/workflows/package.yml)
-on a GitHub-hosted Apple Silicon macOS 26 runner. It builds the pushed commit, verifies the
-app signature, archives, and checksums, and publishes a separate **prerelease** with a DMG,
-ZIP, checksums, and source/build metadata. No signing secrets are needed for these ad-hoc builds.
+[Build Capt](https://github.com/vznh/capt/actions/workflows/build.yml) builds every PR
+when opened, reopened, or updated with new commits, including draft PRs. It tests the PR's
+merge commit against the target branch and verifies the same DMG, ZIP, and checksums as release
+builds. A newer update cancels an older in-progress build for that PR.
 
-Find public downloads on the [releases page](https://github.com/vznh/capt/releases).
-Each successful run gets a unique `master-<run-id>-<attempt>` tag at its source commit;
-reruns cannot overwrite another build. These builds do not replace the stable Latest release.
-The same files are also retained as Actions artifacts for 30 days. Prerelease assets remain
-available until the release is deleted. GitHub may require sign-in to download Actions artifacts.
+Open the PR's **Checks → Build and verify → Details**, then follow **Download preview build**
+in the run summary (or download the artifact at the bottom of the Actions run). GitHub sign-in
+is required. Downloads expire after 30 days and include both PR head and tested merge commits
+in `BUILD.txt`. Builds usually take 2–5 minutes plus runner queue time.
 
-There is no path filter or cancellation of older pushes: each pushed commit gets a build.
-A failed check stops publication. Inspect the failed Actions run and choose **Re-run failed jobs**
-after resolving a transient runner problem, or push a fix. You can also run the workflow manually
-on `master` or an existing version tag. Builds usually take about 3–8 minutes, plus any runner queue time.
+This workflow has read-only repository permissions, uses no Apple signing secrets, and does
+not create releases or post comments. Downloads are ad-hoc signed development builds requiring
+Apple Silicon and macOS 26+. Fork contributions may need a maintainer to approve the Actions
+run; PRs with merge conflicts must resolve them before GitHub can run the merge build.
 
-These are development downloads, not notarized releases. Users may need the first-launch
-exception described in their release notes. Stable notarized releases use the setup below.
+## Master verification
+
+Merging a PR into `master` runs the same read-only **Build Capt** workflow again on the merged
+commit. It creates verified preview artifacts but never publishes a GitHub release.
+Version tags are the only automatic release trigger. Existing historical master prereleases
+are retained, but new master pushes no longer create them.
+
+## Branch policy
+
+Never push directly to `master`, including documentation fixes. Work on a feature branch,
+open a PR, wait for **Build and verify** to pass, and merge through GitHub. The repository
+ruleset requires a PR with passing checks and up-to-date code, with no bypass actors.
+It does not require a second person's approval, so a solo maintainer can merge a passing PR.
+Force pushes and deletion of `master` are also blocked.
 
 ## Local packaging
 
@@ -77,13 +88,14 @@ use `xcrun notarytool log SUBMISSION_ID --keychain-profile Capt-notary` to inspe
 
 ## Versioned GitHub releases
 
-The same workflow also runs when you push a `vX.Y.Z` tag. It uses
+The **Package Capt** release workflow runs when you push a `vX.Y.Z` tag. It uses
 [softprops/action-gh-release](https://github.com/softprops/action-gh-release), pinned to v3.0.3,
 to create the release and upload its DMG, ZIP, checksums, and build metadata.
 
 1. Update `CFBundleShortVersionString` in `Resources/Info.plist` (for example, `0.2.0`)
    and increment `CFBundleVersion`.
-2. Commit and push the changes to `master`.
+2. Commit on a feature branch, open a PR, and merge it after checks pass.
+   Update your local checkout to the merged `master` commit.
 3. Run `Scripts/release.sh`. It checks that your clean checkout matches remote `master`,
    creates the matching version tag if needed, and pushes it. GitHub handles packaging.
 
@@ -96,8 +108,7 @@ git push origin v0.2.0
 
 A tag must exactly match the app version. Invalid or mismatched version tags fail before
 compilation. New versioned releases get installation instructions and generated release notes;
-GitHub determines Latest by its date/version rules (`make_latest: legacy`). Master builds remain
-prereleases and never become Latest.
+GitHub determines Latest by its date/version rules (`make_latest: legacy`). Master builds only produce preview artifacts.
 
 If a release already exists, its notes, title, draft status, and prerelease status are preserved.
 The action attaches missing files and skips existing filenames (`overwrite_files: false`).
