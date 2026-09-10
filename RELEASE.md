@@ -49,6 +49,23 @@ checksums. Filenames include `-local`: these downloads are not notarized for pub
 The app itself is at `build/Capt.app`. This uses the installed Swift toolchain and available
 macOS SDK; public notarization also needs full Xcode.
 
+## When macOS blocks a download or launch
+
+Current downloads are ad-hoc signed, not Developer ID signed or notarized by Apple.
+If Capt downloads but opening it reports an unidentified developer or that Apple cannot
+check it, try opening Capt once, then use **System Settings → Privacy & Security → Open Anyway**
+if you trust the release. Follow [Apple’s guidance](https://support.apple.com/en-us/102445).
+
+If the browser blocks the download itself, or macOS reports the app is damaged or will harm
+your computer, record the exact warning first. Download a fresh copy from this repository's
+GitHub release and verify its SHA-256 checksum; do not disable Gatekeeper system-wide.
+A checksum verifies that the file matches the published download, not its safety.
+
+The publisher-side solution is Developer ID signing and Apple notarization for both the app
+and the DMG. `Scripts/package.sh release` supports that locally after the account setup below.
+The current GitHub Actions workflow still creates ad-hoc builds and needs signing credentials
+and a notarization step before it can produce trusted public downloads.
+
 ## One-time public release setup
 
 1. Install Xcode 26 or newer and select its developer directory (for example, set
