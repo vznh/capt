@@ -18,6 +18,13 @@ Apple Development certificate from the keychain, falling back to ad-hoc with a w
 privacy permissions may be re-requested after each rebuild. `CAPT_SIGN_IDENTITY` overrides the
 choice; see [README.md](README.md#known-limitations).
 
+## App icon
+
+`Resources/AppIcon.png` is the supplied logo, preserved without cropping or redrawing.
+Run `Scripts/build-icon.sh` after replacing it and commit the generated `Resources/AppIcon.icns`.
+The bundle uses this icon in Finder and other macOS app surfaces; the menu bar retains its
+caption status symbol so enabled/disabled states remain visible.
+
 ## Layout rules
 
 - `Sources/CaptionCore` holds protocols, caption state, and session orchestration. It never imports
