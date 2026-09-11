@@ -9,13 +9,15 @@ tracking. Audio and caption text stay in memory and are never saved or sent anyw
 
 Born from watching videos on sites that don't ship captions. Accessibility first.
 
+<img src="docs/images/menu.png" alt="Capt menu with captions inactive, English selected, and theme, text size, resize, and permission controls" width="350">
+
 ## Download and install
 
 [Download the latest release](https://github.com/vznh/capt/releases/latest).
 The current downloads require an **Apple Silicon Mac (M1 or newer) and macOS 26+**.
 
-For newer changes, [automated master prereleases](https://github.com/vznh/capt/releases)
-are built on every push. These are development builds; the Latest release is the stable download.
+For newer changes, [PR and master preview builds](https://github.com/vznh/capt/actions/workflows/build.yml)
+are available as Actions artifacts. Only version tags publish releases; see [RELEASE.md](RELEASE.md).
 
 1. Download the DMG from the release page.
 2. Open it and drag Capt into Applications.
